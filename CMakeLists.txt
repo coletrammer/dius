@@ -14,7 +14,7 @@ include(meta/cmake/variables.cmake)
 
 # ---- Dependencies ----
 
-# Ensure drop verify interface header sets for our dependencies.
+# Drop verify interface header sets for our dependencies.
 set(want_header_set_verification ${CMAKE_VERIFY_INTERFACE_HEADER_SETS})
 set(CMAKE_VERIFY_INTERFACE_HEADER_SETS OFF)
 
@@ -31,11 +31,12 @@ else()
     find_package(di REQUIRED)
 endif()
 
-# Restore verify interface header sets
+# Restore verify interface header sets.
 set(CMAKE_VERIFY_INTERFACE_HEADER_SETS ${want_header_set_verification})
 
 # ---- Source files ----
 
+# All files in certain directories will be filtered out based on the configuration, target OS, and target architecture.
 function(filter input exclude_list output)
     foreach(exclude ${exclude_list})
         string(TOLOWER ${exclude} exclude)
@@ -60,14 +61,17 @@ file(
 )
 
 set(to_filter x86_64 posix linux runtime test_main)
-list(REMOVE_ITEM to_filter ${CMAKE_HOST_SYSTEM_PROCESSOR})
 
-list(REMOVE_ITEM to_filter linux)
-if(UNIX AND NOT IROS_UseDiusRuntime)
-    list(REMOVE_ITEM to_filter posix)
-endif()
-if(IROS_UseDiusRuntime)
+# Keep any source files for the target system and architecture.
+string(TOLOWER "${CMAKE_SYSTEM_NAME}" system_name)
+list(REMOVE_ITEM to_filter ${system_name})
+list(REMOVE_ITEM to_filter ${CMAKE_SYSTEM_PROCESSOR})
+
+# Use either the dius runtime or posix base depending on the configuration.
+if(dius_USE_RUNTIME)
     list(REMOVE_ITEM to_filter runtime)
+elseif(UNIX)
+    list(REMOVE_ITEM to_filter posix)
 endif()
 
 filter("${sources}" "${to_filter}" sources)
@@ -124,6 +128,31 @@ set_target_properties(
                OUTPUT_NAME dius_test_main
                EXPORT_NAME dius_test_main
 )
+
+# ---- Dius runtime support ----
+if(dius_USE_RUNTIME)
+    # Crt0 is provided to allow using the dius runtime with a regular linux compiler, which expects crt0.o to exist even
+    # with no libc.
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/crt0.o" "INPUT(libdius.a)")
+
+    target_compile_definitions(dius_dius PUBLIC DIUS_USE_RUNTIME DI_NO_USE_STD)
+
+    # The dius runtime is fully free standing and requires consumers to not link libc, or use standard C++ headers.
+    target_compile_options(
+        dius_dius
+        PUBLIC "-nostdlib" "-static"
+        PRIVATE "-fno-stack-protector" "-ffreestanding" "-fPIC"
+    )
+    target_link_options(
+        dius_dius
+        PUBLIC
+        "-nostdlib"
+        "-static"
+        PRIVATE
+        "-fno-stack-protector"
+        "-ffreestanding"
+    )
+endif()
 
 # ---- Install rules ----
 

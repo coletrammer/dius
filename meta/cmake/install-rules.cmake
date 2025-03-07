@@ -6,12 +6,6 @@ if(PROJECT_IS_TOP_LEVEL)
     set_property(CACHE CMAKE_INSTALL_INCLUDEDIR PROPERTY TYPE PATH)
 endif()
 
-# Project is configured with no languages, so tell GNUInstallDirs the lib dir
-set(CMAKE_INSTALL_LIBDIR
-    lib
-    CACHE PATH ""
-)
-
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
@@ -21,6 +15,9 @@ set(package dius)
 install(
     TARGETS dius_dius dius_dius_test_main
     EXPORT diusTargets
+    RUNTIME COMPONENT di_Runtime
+    LIBRARY COMPONENT di_Runtime NAMELINK_COMPONENT di_Development
+    ARCHIVE COMPONENT di_Development
     INCLUDES
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
     FILE_SET HEADERS
@@ -54,6 +51,10 @@ install(
     DESTINATION "${dius_INSTALL_CMAKEDIR}"
     COMPONENT dius_Development
 )
+
+if(dius_USE_RUNTIME)
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/crt0.o" DESTINATION lib)
+endif()
 
 if(PROJECT_IS_TOP_LEVEL)
     include(CPack)

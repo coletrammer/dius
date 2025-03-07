@@ -20,3 +20,7 @@ if(NOT PROJECT_IS_TOP_LEVEL)
         set(warning_guard SYSTEM)
     endif()
 endif()
+
+# ---- Dius Runtime ----
+
+option(dius_USE_RUNTIME "Enable dius runtime (no libc mode) (linux only)" OFF)

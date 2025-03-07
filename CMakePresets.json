@@ -45,6 +45,13 @@
             }
         },
         {
+            "name": "dius-runtime",
+            "hidden": true,
+            "cacheVariables": {
+                "dius_USE_RUNTIME": "ON"
+            }
+        },
+        {
             "name": "flags-gcc-clang",
             "description": "These flags are supported by both GCC and Clang",
             "hidden": true,
