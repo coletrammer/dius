@@ -1,4 +1,5 @@
 #include "di/function/prelude.h"
+#include "di/test/prelude.h"
 #include "dius/filesystem/operations.h"
 #include "dius/filesystem/prelude.h"
 #include "dius/filesystem/query/is_block_file.h"
@@ -6,7 +7,6 @@
 #include "dius/print.h"
 #include "dius/sync_file.h"
 #include "dius/system/process.h"
-#include "dius/test/prelude.h"
 
 namespace filesystem {
 constexpr auto temp_directory_path = "/tmp/test_dius"_pv;

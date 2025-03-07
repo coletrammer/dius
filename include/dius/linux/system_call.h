@@ -69,7 +69,7 @@ namespace detail {
     concept SystemCallArgument = di::concepts::ConstructibleFrom<SystemCallArg, T>;
 
     template<typename T>
-    concept SystemCallResult = di::concepts::ConstructibleFrom<T, SystemCallResult>;
+    concept SystemCallResult = di::concepts::ConstructibleFrom<T, dius::system::SystemCallResult>;
 }
 
 template<detail::SystemCallResult R>

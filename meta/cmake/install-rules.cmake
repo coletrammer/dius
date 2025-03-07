@@ -19,8 +19,8 @@ include(GNUInstallDirs)
 set(package dius)
 
 install(
-    TARGETS dius_dius
-    EXPORT diTargets
+    TARGETS dius_dius dius_dius_test_main
+    EXPORT diusTargets
     INCLUDES
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
     FILE_SET HEADERS
@@ -49,8 +49,8 @@ install(
 )
 
 install(
-    EXPORT diTargets
-    NAMESPACE di::
+    EXPORT diusTargets
+    NAMESPACE dius::
     DESTINATION "${dius_INSTALL_CMAKEDIR}"
     COMPONENT dius_Development
 )

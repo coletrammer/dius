@@ -5,7 +5,8 @@
 .vs/
 .vscode/
 build/
-result/
+di
+result
 cmake-build-*/
 prefix/
 CMakeLists.txt.user

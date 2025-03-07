@@ -1,5 +1,5 @@
 #include "di/sync/prelude.h"
-#include "dius/test/prelude.h"
+#include "di/test/prelude.h"
 #include "dius/thread.h"
 
 namespace tls {

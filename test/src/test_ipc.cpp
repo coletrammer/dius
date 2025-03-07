@@ -3,9 +3,9 @@
 #include "di/execution/io/async_net.h"
 #include "di/execution/io/ipc_protocol.h"
 #include "di/reflect/prelude.h"
+#include "di/test/prelude.h"
 #include "dius/io_context.h"
 #include "dius/ipc.h"
-#include "dius/test/prelude.h"
 
 namespace ipc {
 struct ClientMessage1 {

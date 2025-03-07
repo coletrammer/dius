@@ -1,8 +1,8 @@
 #include "di/container/string/encoding.h"
 #include "di/math/prelude.h"
+#include "di/test/prelude.h"
 #include "dius/print.h"
 #include "dius/system/process.h"
-#include "dius/test/prelude.h"
 
 #ifndef DIUS_USE_RUNTIME
 #include <cxxabi.h>
@@ -67,7 +67,7 @@ void assert_fail(char const* source_text, char const* lhs_message, char const* r
     ::free(di::voidify(symbols));
 #endif
 
-    auto& test_manager = dius::test::TestManager::the();
+    auto& test_manager = di::test::TestManager::the();
     if (test_manager.is_test_application()) {
         test_manager.handle_assertion_failure();
     }

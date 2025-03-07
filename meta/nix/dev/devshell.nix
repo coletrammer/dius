@@ -4,6 +4,7 @@
     {
       config,
       pkgs,
+      system,
       ...
     }:
     let
@@ -43,6 +44,9 @@
 
             # Coverage
             lcov
+
+            # Dependencies
+            inputs.di.packages.${system}.default
           ]);
       };
     };
