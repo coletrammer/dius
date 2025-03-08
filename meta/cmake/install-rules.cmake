@@ -15,9 +15,9 @@ set(package dius)
 install(
     TARGETS dius_dius dius_dius_test_main
     EXPORT diusTargets
-    RUNTIME COMPONENT di_Runtime
-    LIBRARY COMPONENT di_Runtime NAMELINK_COMPONENT di_Development
-    ARCHIVE COMPONENT di_Development
+    RUNTIME COMPONENT dius_Runtime
+    LIBRARY COMPONENT dius_Runtime NAMELINK_COMPONENT dius_Development
+    ARCHIVE COMPONENT dius_Development
     INCLUDES
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
     FILE_SET HEADERS

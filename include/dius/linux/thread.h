@@ -3,11 +3,12 @@
 #include "di/function/container/function.h"
 #include "dius/error.h"
 #include "dius/memory_region.h"
-#include "dius/runtime/tls.h"
 
 #ifndef DIUS_USE_RUNTIME
 #include "dius/posix/thread.h"
 #else
+#include "dius/runtime/tls.h"
+
 namespace dius {
 struct PlatformThread;
 struct PlatformThreadDeleter;

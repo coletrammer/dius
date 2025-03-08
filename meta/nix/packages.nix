@@ -19,7 +19,7 @@
             ninja
           ];
 
-          propagatedNativeBuildInputs = [
+          propagatedBuildInputs = [
             inputs.di.packages.${system}.default
           ];
         };
