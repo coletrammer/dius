@@ -3,9 +3,7 @@
     "di": {
       "inputs": {
         "flake-parts": "flake-parts",
-        "nixpkgs": [
-          "nixpkgs"
-        ]
+        "nixpkgs": ["nixpkgs"]
       },
       "locked": {
         "lastModified": 1741241504,
@@ -23,10 +21,7 @@
     },
     "flake-parts": {
       "inputs": {
-        "nixpkgs-lib": [
-          "di",
-          "nixpkgs"
-        ]
+        "nixpkgs-lib": ["di", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1740872218,
@@ -44,9 +39,7 @@
     },
     "flake-parts_2": {
       "inputs": {
-        "nixpkgs-lib": [
-          "nixpkgs"
-        ]
+        "nixpkgs-lib": ["nixpkgs"]
       },
       "locked": {
         "lastModified": 1740872218,

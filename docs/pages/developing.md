@@ -53,39 +53,39 @@ the project:
 
 ```json
 {
-    "version": 2,
-    "cmakeMinimumRequired": {
-        "major": 3,
-        "minor": 21,
-        "patch": 0
-    },
-    "configurePresets": [
-        {
-            "name": "dev",
-            "binaryDir": "${sourceDir}/build/dev",
-            "inherits": ["dev-mode", "docs", "ci-<os>"],
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
-            }
-        }
-    ],
-    "buildPresets": [
-        {
-            "name": "dev",
-            "configurePreset": "dev",
-            "configuration": "Debug"
-        }
-    ],
-    "testPresets": [
-        {
-            "name": "dev",
-            "configurePreset": "dev",
-            "configuration": "Debug",
-            "output": {
-                "outputOnFailure": true
-            }
-        }
-    ]
+  "version": 2,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "dev",
+      "binaryDir": "${sourceDir}/build/dev",
+      "inherits": ["dev-mode", "docs", "ci-<os>"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "dev",
+      "configurePreset": "dev",
+      "configuration": "Debug"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "dev",
+      "configurePreset": "dev",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
 }
 ```
 
@@ -150,6 +150,18 @@ HTML command uses the trace command's output to generate an HTML document to
 Available if `BUILD_DOCS` is enabled. Builds to documentation using
 Doxygen. The output will go to `<binary-dir>/docs/html` by default
 (customizable using `DOXYGEN_OUTPUT_DIRECTORY`).
+
+## di Library
+
+When using the nix environment, the di library is automatically available to
+the CMake build. However, this copy is immutable. If you need to make changes
+to both libraries at once, a custom checkout of di can be used by creating
+a symbolic link named `di` in the root of this package. For instance, if your
+di checkout is in a sibling directory of your dius checkout, run:
+
+```sh
+ln -s "$(realpath ../di)" di
+```
 
 ## Justfile
 

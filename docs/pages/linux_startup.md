@@ -66,8 +66,3 @@ sense, because it is up to userspace to ultimately manage the thread-local stora
 when considering dynamic linking, because multiple libraries can allocate their thread-local regions. Additionally,
 access to the program headers is somewhat mandated by the `dl_iterator_phdr` function, which is used to unwind the stack
 by libunwind. If userspace has to parse its own program headers anyway, why should Linux change its ABI?
-
-It is tempting to have the Iris kernel provide userspace with the TLS base, TLS alignment, and TLS size based on the
-loaded executable. However, this does open up some questions, like: What happens if there are multiple TLS segments?
-What happens if the dynamic linker requests TLS? Given that the dius runtime will already support the ABI present on
-Linux, it will be easier to just ignore TLS in the kernel. This aligns which its minimalist philosophy.

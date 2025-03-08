@@ -1,7 +1,6 @@
 # Building
 
 This package can be built either directly through [CMake](https://cmake.org/) or using [nix](https://nixos.org/).
-As this library is header only building is rather trivial.
 
 ## Building with CMake
 
@@ -9,6 +8,14 @@ As this library is header only building is rather trivial.
 
 - Install CMake version 3.21 or later.
 - Install either GCC 14+ or Clang 19+ (only necessary to actual use the header files).
+
+### Dependencies
+
+- The [di](https://github.com/coletrammer) library.
+
+The di library will be found using CMake `find_package` unless the source is available
+at the path specified by `dius_di_DIRECTORY`. By default, that CMake variable is set
+`./di`. When using nix, the library's flake is included automatically.
 
 ### Consuming via CMake
 
@@ -76,12 +83,20 @@ dius = {
 Then include `inputs.dius.packages.${system}.default` in the `buildInputs` or your derivation. Assuming your
 project is using CMake, `find_package(dius)` will succeed automatically.
 
+This flake provides takes the di library as a flake input, so it can be overridden easily.
+
 ### Manual Build Commands
 
 Alternatively, use the `nix` command to build the library manually.
 
 ```sh
 nix build .
+```
+
+To build the dius runtime variable, use:
+
+```sh
+nix build.#dius-runtime
 ```
 
 This outputs the result to `./result`.

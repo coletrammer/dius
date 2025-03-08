@@ -24,7 +24,8 @@ jobs:
           nix flake check
       - name: Check nix build
         run: |
-          nix build
+          nix build .#dius
+          nix build .#dius-runtime
       - name: Run clang-tidy
         run: |
           nix develop --command just preset=ci-ubuntu-clang check_tidy

@@ -117,6 +117,11 @@
             "name": "ci-ubuntu-clang",
             "binaryDir": "${sourceDir}/build",
             "inherits": ["ci-build", "ci-linux", "docs", "dev-mode", "clang"]
+        },
+        {
+            "name": "ci-ubuntu-dius-runtime",
+            "binaryDir": "${sourceDir}/build",
+            "inherits": ["ci-build", "ci-linux", "docs", "dev-mode", "dius-runtime"]
         }
     ],
     "buildPresets": [
@@ -135,6 +140,10 @@
         {
             "name": "ci-ubuntu-clang",
             "configurePreset": "ci-ubuntu-clang"
+        },
+        {
+            "name": "ci-ubuntu-dius-runtime",
+            "configurePreset": "ci-ubuntu-dius-runtime"
         }
     ],
     "testPresets": [
@@ -162,6 +171,13 @@
         {
             "name": "ci-ubuntu-clang",
             "configurePreset": "ci-ubuntu-clang",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "ci-ubuntu-dius-runtime",
+            "configurePreset": "ci-ubuntu-dius-runtime",
             "output": {
                 "outputOnFailure": true
             }
