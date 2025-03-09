@@ -7,11 +7,11 @@ This package can be built either directly through [CMake](https://cmake.org/) or
 ### Prerequisites
 
 - Install CMake version 3.21 or later.
-- Install either GCC 14+ or Clang 19+ (only necessary to actual use the header files).
+- Install either GCC 14+ or Clang 19+.
 
 ### Dependencies
 
-- The [di](https://github.com/coletrammer) library.
+- The [di](https://github.com/coletrammer/di) library.
 
 The di library will be found using CMake `find_package` unless the source is available
 at the path specified by `dius_di_DIRECTORY`. By default, that CMake variable is set
