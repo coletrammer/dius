@@ -3,14 +3,16 @@
     "di": {
       "inputs": {
         "flake-parts": "flake-parts",
-        "nixpkgs": ["nixpkgs"]
+        "nixpkgs": [
+          "nixpkgs"
+        ]
       },
       "locked": {
-        "lastModified": 1741241504,
-        "narHash": "sha256-2W4ThxtXPbwT+vMH5wB+qAM602abHAQDXUEL1UZkQt0=",
+        "lastModified": 1741548285,
+        "narHash": "sha256-m3DsudYLDRwmd78PCLcaZKHFZ5htu7wroaU8uF6Na8A=",
         "owner": "coletrammer",
         "repo": "di",
-        "rev": "84d912d0a679cf0b0dd6ea4c4696f4607b357cd7",
+        "rev": "cd66ee5d66d689725acf5ef7b65542444df0016e",
         "type": "github"
       },
       "original": {
@@ -21,7 +23,10 @@
     },
     "flake-parts": {
       "inputs": {
-        "nixpkgs-lib": ["di", "nixpkgs"]
+        "nixpkgs-lib": [
+          "di",
+          "nixpkgs"
+        ]
       },
       "locked": {
         "lastModified": 1740872218,
@@ -39,7 +44,9 @@
     },
     "flake-parts_2": {
       "inputs": {
-        "nixpkgs-lib": ["nixpkgs"]
+        "nixpkgs-lib": [
+          "nixpkgs"
+        ]
       },
       "locked": {
         "lastModified": 1740872218,
