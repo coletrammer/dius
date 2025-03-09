@@ -16,6 +16,9 @@
 #elif defined(__iros__)
 #define DIUS_PLATFORM iros
 #define DIUS_PLATFORM_IROS
+#elif defined(__APPLE__)
+#define DIUS_PLATFORM darwin
+#define DIUS_PLATFORM_DARWIN
 #else
 #error "Unsupported dius platform"
 #endif

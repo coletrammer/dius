@@ -17,6 +17,12 @@
 #include "di/util/scope_exit.h"
 
 namespace dius::system {
+static auto s_envp = static_cast<char**>(nullptr);
+
+[[gnu::constructor]] static void get_env_on_init(int, char**, char** envp) {
+    s_envp = envp;
+}
+
 auto ProcessHandle::self() -> ProcessHandle {
     return ProcessHandle(getpid());
 }
@@ -133,7 +139,7 @@ auto Process::spawn() && -> di::Result<ProcessHandle> {
     posix_spawnattr_setflags(&attrs, attr_flags);
 
     auto pid = pid_t(-1);
-    auto [_, env] = make_env(environ, m_extra_env_vars);
+    auto [_, env] = make_env(s_envp, m_extra_env_vars);
     auto result = posix_spawnp(&pid, null_terminated_args[0], &file_actions, &attrs,
                                const_cast<char**>(null_terminated_args.data()), env.data());
     if (result != 0) {

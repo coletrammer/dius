@@ -1,12 +1,16 @@
 #include "dius/thread.h"
 
+#include <sys/time.h>
+#include <time.h>
+
 #include "di/chrono/duration/duration_cast.h"
 #include "di/chrono/duration/duration_literals.h"
 #include "dius/steady_clock.h"
-#include "time.h"
 
 namespace dius {
 namespace this_thread {
+#ifdef __APPLE__
+#else
     void sleep_for(di::Nanoseconds duration) {
         timespec timespec;
         timespec.tv_sec = di::duration_cast<di::Seconds>(duration).count();
@@ -21,6 +25,7 @@ namespace this_thread {
                            long(di::Nanoseconds::Period::den);
         clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &timespec, nullptr);
     }
+#endif
 }
 
 auto Thread::do_start(di::Function<void()> entry) -> di::Result<Thread> {
