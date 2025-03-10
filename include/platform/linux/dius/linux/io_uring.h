@@ -1,5 +1,7 @@
 #pragma once
 
+#include <linux/io_uring.h>
+
 #include "di/sync/prelude.h"
 #include "di/vocab/error/prelude.h"
 #include "dius/memory_region.h"

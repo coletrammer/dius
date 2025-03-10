@@ -60,12 +60,7 @@ extern "C" [[noreturn]] void dius_entry(int argc, char** argv, char** envp) {
     auto thread_control_block = dius::PlatformThread::create(get_tls_info());
     ASSERT(thread_control_block);
 
-#ifdef DIUS_PLATFORM_LINUX
     (void) dius::system::system_call<i32>(dius::system::Number::arch_prctl, ARCH_SET_FS, thread_control_block->get());
-#elif defined(DIUS_PLATFORM_IROS)
-    (void) dius::system::system_call<i32>(dius::system::Number::set_userspace_thread_pointer, 0,
-                                          thread_control_block->get());
-#endif
 
     iptr preinit_size = __preinit_array_end - __preinit_array_start;
     for (iptr i = 0; i < preinit_size; i++) {
@@ -80,7 +75,6 @@ extern "C" [[noreturn]] void dius_entry(int argc, char** argv, char** envp) {
     dius::system::exit_process(__extension__ main(argc, argv, envp));
 }
 
-#ifdef __linux__
 extern "C" [[noreturn]] [[gnu::naked]] void _start() {
     asm volatile("xor %rbp, %rbp\n"
                  "mov (%rsp), %edi\n"
@@ -88,36 +82,4 @@ extern "C" [[noreturn]] [[gnu::naked]] void _start() {
                  "lea 16(%rsp ,%rdi ,8), %rdx\n"
                  "call dius_entry\n");
 }
-#elif __iros__
-extern "C" [[noreturn]] void _start(di::TransparentStringView* argv, usize argc, di::TransparentStringView* envp,
-                                    usize envc) {
-    // NOTE: although the kernel passes the arguments and enviornment as pointer-length pairs, POSIX and the C standard
-    //       require a different format. In the future, dius applications will be able to opt-in to consuming kernel's
-    //       format directly, but for now, we need to convert it.
-
-    auto** c_argv = reinterpret_cast<char**>(argv);
-    auto** c_envp = reinterpret_cast<char**>(envp);
-
-    auto* null_pointer = static_cast<char*>(nullptr);
-
-    // Convert the string pointers into raw u64 arrays to prevent UB, and then reuse the stack area as a null-terminated
-    // pointer array. To handle empty arguments or enviornment, we reserve a null-pointer on the stack.
-
-    auto argv_words = di::Span { reinterpret_cast<u64*>(argv), argc * sizeof(di::TransparentStringView) / sizeof(u64) };
-    if (argc == 0) {
-        c_argv = &null_pointer;
-    } else {
-        *di::copy(argv_words | di::stride(2), argv_words.begin()).out = 0;
-    }
-
-    auto envp_words = di::Span { reinterpret_cast<u64*>(envp), envc * sizeof(di::TransparentStringView) / sizeof(u64) };
-    if (envc == 0) {
-        c_envp = &null_pointer;
-    } else {
-        *di::copy(envp_words | di::stride(2), envp_words.begin()).out = 0;
-    }
-
-    dius_entry(int(argc), c_argv, c_envp);
-}
-#endif
 }

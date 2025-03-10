@@ -1,15 +1,8 @@
 #include "di/assert/prelude.h"
 #include "di/math/prelude.h"
+#include "dius/c_definitions.h"
 #include "dius/filesystem/prelude.h"
 #include "dius/system/system_call.h"
-
-#ifdef DIUS_USE_RUNTIME
-#include <linux/fcntl.h>
-#include <linux/unistd.h>
-#else
-#include <fcntl.h>
-#include <unistd.h>
-#endif
 
 namespace dius::linux {
 struct [[gnu::packed]] Dirent {

@@ -21,20 +21,13 @@
 #include "di/util/addressof.h"
 #include "di/vocab/optional/prelude.h"
 #include "di/vocab/variant/prelude.h"
+#include "dius/c_definitions.h"
 #include "dius/error.h"
 #include "dius/linux/io_uring.h"
 #include "dius/net/address.h"
 #include "dius/net/socket.h"
 #include "dius/sync_file.h"
 #include "dius/system/system_call.h"
-
-#ifdef DIUS_USE_RUNTIME
-#include <linux/socket.h>
-#include <linux/un.h>
-#else
-#include <sys/socket.h>
-#include <sys/un.h>
-#endif
 
 namespace dius::linux {
 struct IoUringContext;

@@ -1,10 +1,6 @@
 #pragma once
 
-#ifdef __linux__
-#include <linux/errno.h>
-#else
-#include <errno.h>
-#endif
+#include "dius/c_definitions.h"
 
 namespace dius {
 inline namespace posix_error {

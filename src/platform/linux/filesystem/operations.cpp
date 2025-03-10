@@ -1,14 +1,9 @@
 #include "di/assert/prelude.h"
 #include "di/container/algorithm/prelude.h"
 #include "di/vocab/error/prelude.h"
+#include "dius/c_definitions.h"
 #include "dius/filesystem/prelude.h"
 #include "dius/system/system_call.h"
-
-#ifdef DIUS_USE_RUNTIME
-#include <linux/fcntl.h>
-#else
-#include <fcntl.h>
-#endif
 
 namespace dius::filesystem {
 namespace linux {

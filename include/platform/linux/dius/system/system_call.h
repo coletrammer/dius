@@ -1,22 +1,9 @@
 #pragma once
 
-#include <asm/unistd.h>
-#include <linux/io_uring.h>
-
-#ifdef DIUS_USE_RUNTIME
-#include <asm-generic/ioctls.h>
-#include <asm-generic/termios.h>
-#include <linux/fcntl.h>
-#include <linux/mman.h>
-#else
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <sys/mman.h>
-#include <termios.h>
-#endif
-
+#include "asm/unistd.h"
 #include "di/util/prelude.h"
 #include "dius/arch_system_call.h"
+#include "dius/c_definitions.h"
 #include "dius/error.h"
 
 namespace dius::system {
