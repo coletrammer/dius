@@ -21,6 +21,20 @@ if(NOT PROJECT_IS_TOP_LEVEL)
     endif()
 endif()
 
+# ---- Platform specific values ----
+
+string(TOLOWER "${CMAKE_SYSTEM_NAME}" system_name)
+set(dius_PLATFORM
+    "${system_name}"
+    CACHE STRING "Dius platform name (darwin or linux)"
+)
+
+string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" processor_name)
+set(dius_ARCH
+    "${processor_name}"
+    CACHE STRING "Dius architecture name (x86_64 or arm64)"
+)
+
 # ---- Dius Runtime ----
 
 option(dius_USE_RUNTIME "Enable dius runtime (no libc mode) (linux only)" OFF)
