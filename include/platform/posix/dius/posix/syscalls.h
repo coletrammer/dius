@@ -18,6 +18,8 @@ auto sys_close(int fd) -> Result<>;
 
 auto sys_open(di::PathView path, int flags, u16 create_mode) -> Result<int>;
 auto sys_ftruncate(int fd, u64 size) -> Result<>;
+
+auto sys_munmap(byte* addr, usize length) -> Result<>;
 auto sys_mmap(void* addr, usize length, int prot, int flags, int fd, u64 offset) -> Result<byte*>;
 
 auto sys_ioctl(int fd, unsigned long code, void* arg) -> Result<>;

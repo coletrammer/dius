@@ -69,6 +69,14 @@ auto sys_ftruncate(int fd, u64 size) -> Result<> {
     return {};
 }
 
+auto sys_munmap(byte* data, size_t length) -> Result<> {
+    auto result = ::munmap(data, length);
+    if (result < 0) {
+        return di::Unexpected(di::BasicError(errno));
+    }
+    return {};
+}
+
 auto sys_mmap(void* addr, usize length, int prot, int flags, int fd, u64 offset) -> Result<byte*> {
     auto result = ::mmap(addr, length, prot, flags, fd, offset);
     if (result == MAP_FAILED) {

@@ -40,6 +40,10 @@ auto sys_ftruncate(int fd, u64 size) -> Result<> {
     return system::system_call<int>(system::Number::ftruncate, fd, size) % di::into_void;
 }
 
+auto sys_munmap(byte* data, size_t length) -> Result<> {
+    return system::system_call<int>(system::Number::munmap, data, length) % di::into_void;
+}
+
 auto sys_mmap(void* addr, usize length, int prot, int flags, int fd, u64 offset) -> Result<byte*> {
     return system::system_call<byte*>(system::Number::mmap, addr, length, prot, flags, fd, offset);
 }
