@@ -15,3 +15,7 @@
 #include <termios.h>
 #include <time.h>
 #include <unistd.h>
+
+namespace dius::syscalls {
+using Stat = struct ::stat;
+}

@@ -83,4 +83,62 @@ auto sys_tcgetattr(int fd) -> Result<termios> {
 auto sys_tcsetattr(int fd, termios const& termios) -> Result<> {
     return sys_ioctl(fd, TCSETS, di::voidify(&termios));
 }
+
+auto sys_mknod(di::PathView path, u32 type, u32 perms) -> Result<> {
+    auto raw_data = path.data();
+    char null_terminated_string[4097];
+    if (raw_data.size() > sizeof(null_terminated_string) - 1) {
+        return di::Unexpected(di::BasicError::FilenameTooLong);
+    }
+
+    di::copy(raw_data, null_terminated_string);
+    null_terminated_string[raw_data.size()] = '\0';
+
+    return system::system_call<int>(system::Number::mknodat, AT_FDCWD, null_terminated_string, perms | u32(type), 0) %
+           di::into_void;
+}
+
+auto sys_mkdir(di::PathView path, u32 perms) -> Result<> {
+    auto raw_data = path.data();
+    char null_terminated_string[4097];
+    if (raw_data.size() > sizeof(null_terminated_string) - 1) {
+        return di::Unexpected(di::BasicError::FilenameTooLong);
+    }
+
+    di::copy(raw_data, null_terminated_string);
+    null_terminated_string[raw_data.size()] = '\0';
+
+    return system::system_call<int>(system::Number::mkdirat, AT_FDCWD, null_terminated_string, perms) % di::into_void;
+}
+
+auto sys_stat(di::PathView path) -> Result<Stat> {
+    auto raw_data = path.data();
+    char null_terminated_string[4097];
+    if (raw_data.size() > sizeof(null_terminated_string) - 1) {
+        return di::Unexpected(di::BasicError::FilenameTooLong);
+    }
+
+    di::copy(raw_data, null_terminated_string);
+    null_terminated_string[raw_data.size()] = '\0';
+
+    auto output = Stat {};
+    TRY(system::system_call<int>(system::Number::fstatat64, AT_FDCWD, null_terminated_string, &output, 0));
+    return output;
+}
+
+auto sys_lstat(di::PathView path) -> Result<Stat> {
+    auto raw_data = path.data();
+    char null_terminated_string[4097];
+    if (raw_data.size() > sizeof(null_terminated_string) - 1) {
+        return di::Unexpected(di::BasicError::FilenameTooLong);
+    }
+
+    di::copy(raw_data, null_terminated_string);
+    null_terminated_string[raw_data.size()] = '\0';
+
+    auto output = Stat {};
+    TRY(system::system_call<int>(system::Number::fstatat64, AT_FDCWD, null_terminated_string, &output,
+                                 AT_SYMLINK_NOFOLLOW));
+    return output;
+}
 }

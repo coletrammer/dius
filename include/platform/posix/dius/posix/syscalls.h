@@ -5,6 +5,7 @@
 #include "di/vocab/error/prelude.h"
 #include "di/vocab/expected/prelude.h"
 #include "di/vocab/span/prelude.h"
+#include "dius/c_definitions.h"
 
 namespace dius::syscalls {
 template<typename T = void>
@@ -29,4 +30,10 @@ auto sys_grantpt(int fd) -> Result<>;
 auto sys_unlockpt(int fd) -> Result<>;
 auto sys_tcgetattr(int fd) -> Result<termios>;
 auto sys_tcsetattr(int fd, termios const& termios) -> Result<>;
+
+auto sys_mkdir(di::PathView path, u32 perms) -> Result<>;
+auto sys_mknod(di::PathView path, u32 type, u32 perms) -> Result<>;
+
+auto sys_stat(di::PathView path) -> Result<Stat>;
+auto sys_lstat(di::PathView path) -> Result<Stat>;
 }

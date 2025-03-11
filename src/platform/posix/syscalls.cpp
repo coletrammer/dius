@@ -135,4 +135,74 @@ auto sys_tcsetattr(int fd, termios const& termios) -> Result<> {
     }
     return {};
 }
+
+auto sys_mknod(di::PathView path, u32 type, u32 perms) -> Result<> {
+    auto raw_data = path.data();
+    char null_terminated_string[4097];
+    if (raw_data.size() > sizeof(null_terminated_string) - 1) {
+        return di::Unexpected(di::BasicError::FilenameTooLong);
+    }
+
+    di::copy(raw_data, null_terminated_string);
+    null_terminated_string[raw_data.size()] = '\0';
+
+    auto result = ::mknod(null_terminated_string, type | perms, 0);
+    if (result < 0) {
+        return di::Unexpected(di::BasicError(errno));
+    }
+    return {};
+}
+
+auto sys_mkdir(di::PathView path, u32 perms) -> Result<> {
+    auto raw_data = path.data();
+    char null_terminated_string[4097];
+    if (raw_data.size() > sizeof(null_terminated_string) - 1) {
+        return di::Unexpected(di::BasicError::FilenameTooLong);
+    }
+
+    di::copy(raw_data, null_terminated_string);
+    null_terminated_string[raw_data.size()] = '\0';
+
+    auto result = ::mkdir(null_terminated_string, perms);
+    if (result < 0) {
+        return di::Unexpected(di::BasicError(errno));
+    }
+    return {};
+}
+
+auto sys_stat(di::PathView path) -> Result<Stat> {
+    auto raw_data = path.data();
+    char null_terminated_string[4097];
+    if (raw_data.size() > sizeof(null_terminated_string) - 1) {
+        return di::Unexpected(di::BasicError::FilenameTooLong);
+    }
+
+    di::copy(raw_data, null_terminated_string);
+    null_terminated_string[raw_data.size()] = '\0';
+
+    auto output = Stat {};
+    auto result = ::stat(null_terminated_string, &output);
+    if (result < 0) {
+        return di::Unexpected(di::BasicError(errno));
+    }
+    return output;
+}
+
+auto sys_lstat(di::PathView path) -> Result<Stat> {
+    auto raw_data = path.data();
+    char null_terminated_string[4097];
+    if (raw_data.size() > sizeof(null_terminated_string) - 1) {
+        return di::Unexpected(di::BasicError::FilenameTooLong);
+    }
+
+    di::copy(raw_data, null_terminated_string);
+    null_terminated_string[raw_data.size()] = '\0';
+
+    auto output = Stat {};
+    auto result = ::lstat(null_terminated_string, &output);
+    if (result < 0) {
+        return di::Unexpected(di::BasicError(errno));
+    }
+    return output;
+}
 }
