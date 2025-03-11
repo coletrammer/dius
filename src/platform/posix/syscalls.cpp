@@ -205,4 +205,12 @@ auto sys_lstat(di::PathView path) -> Result<Stat> {
     }
     return output;
 }
+
+#ifndef __APPLE__
+auto sys_clock_nanosleep(int clock, int flags, timespec timespec) -> Result<::timespec> {
+    ::timespec rem;
+    (void) clock_nanosleep(clock, flags, &timespec, &rem);
+    return rem;
+}
+#endif
 }

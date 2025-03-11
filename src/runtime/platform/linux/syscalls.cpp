@@ -141,4 +141,10 @@ auto sys_lstat(di::PathView path) -> Result<Stat> {
                                  AT_SYMLINK_NOFOLLOW));
     return output;
 }
+
+auto sys_clock_nanosleep(int clock, int flags, timespec timespec) -> Result<::timespec> {
+    ::timespec rem;
+    (void) system::system_call<i32>(system::Number::clock_nanosleep, clock, flags, &timespec, &rem);
+    return rem;
+}
 }

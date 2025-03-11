@@ -8,26 +8,6 @@
 #include "dius/steady_clock.h"
 
 namespace dius {
-namespace this_thread {
-#ifdef __APPLE__
-#else
-    void sleep_for(di::Nanoseconds duration) {
-        timespec timespec;
-        timespec.tv_sec = di::duration_cast<di::Seconds>(duration).count();
-        timespec.tv_nsec = duration.count() % long(di::Nanoseconds::Period::den);
-        clock_nanosleep(CLOCK_MONOTONIC, 0, &timespec, nullptr);
-    }
-
-    void sleep_until(SteadyClock::TimePoint time_point) {
-        timespec timespec;
-        timespec.tv_sec = di::duration_cast<di::Seconds>(time_point.time_since_epoch()).count();
-        timespec.tv_nsec = di::duration_cast<di::Nanoseconds>(time_point.time_since_epoch()).count() %
-                           long(di::Nanoseconds::Period::den);
-        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &timespec, nullptr);
-    }
-#endif
-}
-
 auto Thread::do_start(di::Function<void()> entry) -> di::Result<Thread> {
     auto platform = di::make_box<PlatformThread>();
     platform->entry = di::move(entry);

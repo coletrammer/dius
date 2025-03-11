@@ -36,4 +36,6 @@ auto sys_mknod(di::PathView path, u32 type, u32 perms) -> Result<>;
 
 auto sys_stat(di::PathView path) -> Result<Stat>;
 auto sys_lstat(di::PathView path) -> Result<Stat>;
+
+auto sys_clock_nanosleep(int clock, int flags, timespec duration) -> Result<timespec>;
 }
