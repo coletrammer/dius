@@ -8,11 +8,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1741548285,
-        "narHash": "sha256-m3DsudYLDRwmd78PCLcaZKHFZ5htu7wroaU8uF6Na8A=",
+        "lastModified": 1741671284,
+        "narHash": "sha256-k3OYsfaVr3cgM9/S/kB7EgRpKeAKmSVeFRnhCwy8tRs=",
         "owner": "coletrammer",
         "repo": "di",
-        "rev": "cd66ee5d66d689725acf5ef7b65542444df0016e",
+        "rev": "7f132a8bcd885df60f71047faeee5cba25a21708",
         "type": "github"
       },
       "original": {
