@@ -3,7 +3,6 @@
 #include "dius/c_definitions.h"
 #include "dius/filesystem/prelude.h"
 #include "dius/posix/syscalls.h"
-#include "dius/system/system_call.h"
 
 namespace dius::filesystem {
 static auto stat_to_file_status(dius::syscalls::Stat const& info) -> FileStatus {

@@ -4,9 +4,9 @@
 #include "di/function/container/function.h"
 #include "di/util/prelude.h"
 #include "di/util/scope_exit.h"
+#include "dius/c_definitions.h"
 #include "dius/error.h"
 #include "dius/memory_region.h"
-#include "dius/system/system_call.h"
 #include "dius/tty.h"
 
 namespace dius {

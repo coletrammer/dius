@@ -2,7 +2,6 @@
 
 #include "di/function/prelude.h"
 #include "dius/posix/syscalls.h"
-#include "dius/system/system_call.h"
 
 namespace dius {
 MemoryRegion::~MemoryRegion() {
