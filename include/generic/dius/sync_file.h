@@ -26,7 +26,9 @@ enum class MapFlags : int {
     Private = MAP_PRIVATE,
     Fixed = MAP_FIXED,
     Anonymous = MAP_ANONYMOUS,
+#ifdef MAP_POPULATE
     Stack = MAP_STACK,
+#endif
 #ifdef MAP_POPULATE
     Populate = MAP_POPULATE,
 #endif
