@@ -12,7 +12,7 @@ auto CreateRegularFileFunction::operator()(di::PathView path) const -> di::Resul
 #ifdef DIUS_USE_MKNOD_TO_CREATE_FILES
     auto result = syscalls::sys_mknod(path, u32(S_IFREG), u32(Perms::All));
 #else
-    auto result = dius::open_sync(path, OpenMode::WriteNew, Perms::All);
+    auto result = dius::open_sync(path, OpenMode::WriteNew, u16(Perms::All));
 #endif
 
     if (!result) {

@@ -324,8 +324,8 @@ private:
 
             IoContext* m_parent;
             di::PathView m_path;
-            OpenMode m_mode;
-            u16 m_create_mode;
+            [[maybe_unused]] OpenMode m_mode;
+            [[maybe_unused]] u16 m_create_mode;
             SyncFile m_file;
         };
 
