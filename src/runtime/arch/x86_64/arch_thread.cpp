@@ -1,6 +1,5 @@
-#include "dius/thread.h"
-
 #include "di/util/prelude.h"
+#include "dius/thread.h"
 
 namespace di::platform {
 struct TlsIndex {
