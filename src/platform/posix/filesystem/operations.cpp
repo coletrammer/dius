@@ -7,7 +7,7 @@
 
 namespace dius::filesystem::detail {
 auto CreateRegularFileFunction::operator()(di::PathView path) const -> di::Result<bool> {
-    auto result = syscalls::sys_mknod(path, u32(FileType::Regular), u32(Perms::All));
+    auto result = syscalls::sys_mknod(path, u32(S_IFREG), u32(Perms::All));
     if (!result) {
         if (result.error() == PosixError::FileExists) {
             return false;
