@@ -6,6 +6,7 @@
 #include "di/vocab/expected/prelude.h"
 #include "di/vocab/span/prelude.h"
 #include "dius/c_definitions.h"
+#include "dius/platform_process.h"
 
 namespace dius::syscalls {
 template<typename T = void>
@@ -16,6 +17,7 @@ auto sys_write(int fd, di::Span<byte const> data) -> Result<usize>;
 auto sys_pread(int fd, u64 offset, di::Span<byte> data) -> Result<usize>;
 auto sys_pwrite(int fd, u64 offset, di::Span<byte const> data) -> Result<usize>;
 auto sys_close(int fd) -> Result<>;
+auto sys_dup2(int old_fd, int new_fd) -> Result<>;
 
 auto sys_open(di::PathView path, int flags, u16 create_mode) -> Result<int>;
 auto sys_ftruncate(int fd, u64 size) -> Result<>;
@@ -24,6 +26,10 @@ auto sys_munmap(byte* addr, usize length) -> Result<>;
 auto sys_mmap(void* addr, usize length, int prot, int flags, int fd, u64 offset) -> Result<byte*>;
 
 auto sys_ioctl(int fd, unsigned long code, void* arg) -> Result<>;
+
+auto sys_setsid() -> Result<>;
+auto sys_fork() -> Result<ProcessId>;
+auto sys_execve(char const* path, char** args, char** env) -> Result<>;
 
 auto sys_ptsname(int fd) -> Result<di::Path>;
 auto sys_grantpt(int fd) -> Result<>;

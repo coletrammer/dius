@@ -78,22 +78,21 @@ auto SyncFile::enter_raw_mode() -> di::Expected<RawModeToken, di::GenericCode> {
     }));
 }
 
-auto open_sync(di::PathView path, OpenMode open_mode, u16 create_mode) -> di::Expected<SyncFile, di::GenericCode> {
-    auto flags = detail::open_mode_flags(open_mode);
+auto open_sync(di::PathView path, OpenMode open_mode, u16 create_mode, OpenFlags open_flags)
+    -> di::Expected<SyncFile, di::GenericCode> {
+    auto flags = detail::open_mode_flags(open_mode, open_flags);
     auto fd = TRY(syscalls::sys_open(path, flags, create_mode));
     return SyncFile { SyncFile::Owned::Yes, fd };
 }
 
-auto open_psuedo_terminal_controller(OpenMode open_mode, tty::WindowSize size)
-    -> di::Expected<SyncFile, di::GenericCode> {
-    auto flags = detail::open_mode_flags(open_mode);
+auto open_psuedo_terminal_controller(OpenMode open_mode) -> di::Expected<SyncFile, di::GenericCode> {
+    auto flags = detail::open_mode_flags(open_mode, OpenFlags::NoControllingTerminal);
     auto fd = TRY(syscalls::sys_open("/dev/ptmx"_pv, flags, 0));
     auto result = SyncFile { SyncFile::Owned::Yes, fd };
 
     // Set window size, and call grantpt() + unlockpt().
     TRY(syscalls::sys_grantpt(result.file_descriptor()));
     TRY(syscalls::sys_unlockpt(result.file_descriptor()));
-    TRY(result.set_tty_window_size(size));
 
     return result;
 }

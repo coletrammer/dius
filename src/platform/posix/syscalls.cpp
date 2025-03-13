@@ -44,6 +44,14 @@ auto sys_close(int fd) -> Result<> {
     return {};
 }
 
+auto sys_dup2(int old_fd, int new_fd) -> Result<> {
+    auto result = ::dup2(old_fd, new_fd);
+    if (result < 0) {
+        return di::Unexpected(di::BasicError(errno));
+    }
+    return {};
+}
+
 auto sys_open(di::PathView path, int flags, u16 create_mode) -> Result<int> {
     auto raw_data = path.data();
     char null_terminated_string[4097];
@@ -89,6 +97,31 @@ auto sys_ioctl(int fd, unsigned long code, void* arg) -> Result<> {
     if (result < 0) {
         return di::Unexpected(di::BasicError(errno));
     }
+    return {};
+}
+
+auto sys_setsid() -> Result<> {
+    auto result = ::setsid();
+    if (result < 0) {
+        return di::Unexpected(di::BasicError(errno));
+    }
+    return {};
+}
+
+auto sys_fork() -> Result<ProcessId> {
+    auto result = ::fork();
+    if (result < 0) {
+        return di::Unexpected(di::BasicError(errno));
+    }
+    return result;
+}
+
+auto sys_execve(char const* path, char** args, char** env) -> Result<> {
+    auto result = execve(path, args, env);
+    if (result < 0) {
+        return di::Unexpected(di::BasicError(errno));
+    }
+    di::unreachable();
     return {};
 }
 

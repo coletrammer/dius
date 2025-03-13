@@ -108,10 +108,17 @@ private:
 
 enum class OpenMode { Readonly, WriteNew, WriteClobber, ReadWrite, AppendOnly, ReadWriteClobber, AppendReadWrite };
 
-auto open_sync(di::PathView path, OpenMode open_mode, u16 create_mode = 0666)
+enum class OpenFlags {
+    None = 0,
+    NoControllingTerminal = 1,
+    KeepAfterExec = 2,
+};
+
+DI_DEFINE_ENUM_BITWISE_OPERATIONS(OpenFlags)
+
+auto open_sync(di::PathView path, OpenMode open_mode, u16 create_mode = 0666, OpenFlags flags = OpenFlags::None)
     -> di::Expected<SyncFile, di::GenericCode>;
-auto open_psuedo_terminal_controller(OpenMode open_mode, tty::WindowSize size)
-    -> di::Expected<SyncFile, di::GenericCode>;
+auto open_psuedo_terminal_controller(OpenMode open_mode) -> di::Expected<SyncFile, di::GenericCode>;
 auto open_tempory_file() -> di::Expected<SyncFile, di::GenericCode>;
 auto read_to_string(di::PathView path) -> di::Result<di::String>;
 

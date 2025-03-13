@@ -9,6 +9,7 @@
 #include "dius/error.h"
 #include "dius/platform_process.h"
 #include "dius/sync_file.h"
+#include "dius/tty.h"
 
 namespace dius::system {
 class ProcessResult {
@@ -85,6 +86,16 @@ public:
         return di::move(*this);
     }
 
+    auto with_tty_window_size(int fd, tty::WindowSize const& size) && -> Process {
+        m_tty_window_size = { fd, size };
+        return di::move(*this).use_fork();
+    }
+
+    auto with_controlling_tty(int fd) && -> Process {
+        m_controlling_tty = fd;
+        return di::move(*this).use_fork();
+    }
+
     auto with_new_session() && -> Process {
         m_new_session = true;
         return di::move(*this);
@@ -92,6 +103,11 @@ public:
 
     auto with_env(di::TransparentString key, di::TransparentString value) && -> Process {
         m_extra_env_vars.insert_or_assign(di::move(key), di::move(value));
+        return di::move(*this);
+    }
+
+    auto use_fork(bool b = true) && -> Process {
+        m_use_fork = b;
         return di::move(*this);
     }
 
@@ -103,10 +119,16 @@ public:
     }
 
 private:
+    auto spawn_with_fork() && -> di::Result<ProcessHandle>;
+    auto spawn_with_posix_spawn() && -> di::Result<ProcessHandle>;
+
     di::Vector<di::TransparentString> m_arguments;
     di::Vector<FileAction> m_file_actions;
     di::TreeMap<di::TransparentString, di::TransparentString> m_extra_env_vars;
+    di::Optional<di::Tuple<i32, tty::WindowSize>> m_tty_window_size;
+    di::Optional<i32> m_controlling_tty;
     bool m_new_session { false };
+    bool m_use_fork { false };
 };
 
 auto mask_signal(Signal signal) -> di::Result<void>;

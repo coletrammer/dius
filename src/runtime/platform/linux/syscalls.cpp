@@ -19,6 +19,10 @@ auto sys_pwrite(int fd, u64 offset, di::Span<byte const> data) -> Result<usize> 
     return system::system_call<usize>(system::Number::pwrite, fd, data.data(), data.size(), offset);
 }
 
+auto sys_dup2(int old_fd, int new_fd) -> Result<> {
+    return system::system_call<int>(system::Number::dup2, old_fd, new_fd) % di::into_void;
+}
+
 auto sys_close(int fd) -> Result<> {
     return system::system_call<int>(system::Number::close, fd) % di::into_void;
 }
@@ -49,6 +53,31 @@ auto sys_mmap(void* addr, usize length, int prot, int flags, int fd, u64 offset)
 }
 auto sys_ioctl(int fd, unsigned long code, void* arg) -> Result<> {
     return system::system_call<int>(system::Number::ioctl, fd, code, arg) % di::into_void;
+}
+
+auto sys_setsid() -> Result<> {
+    return system_call<int>(system::Number::setsid) % di::into_void;
+}
+
+auto sys_fork() -> Result<ProcessId> {
+    auto args = ::clone_args {
+        .flags = CLONE_CLEAR_SIGHAND,
+        .pidfd = 0,
+        .child_tid = 0,
+        .parent_tid = 0,
+        .exit_signal = SIGCHLD,
+        .stack = 0,
+        .stack_size = 0,
+        .tls = 0,
+        .set_tid = 0,
+        .set_tid_size = 0,
+        .cgroup = 0,
+    };
+    return system_call<ProcessId>(system::Number::clone3, &args, sizeof(args));
+}
+
+auto sys_execve(char const* path, char** args, char** env) -> Result<> {
+    return system_call<int>(system::Number::execve, path, args, env) % di::into_void;
 }
 
 auto sys_ptsname(int fd) -> Result<di::Path> {
