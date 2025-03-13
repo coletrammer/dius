@@ -21,7 +21,7 @@ auto sys_write(int fd, di::Span<byte const> data) -> Result<usize> {
 }
 
 auto sys_pread(int fd, u64 offset, di::Span<byte> data) -> Result<usize> {
-    auto result = ::pread(fd, data.data(), data.size(), offset);
+    auto result = ::pread(fd, data.data(), data.size(), off_t(offset));
     if (result < 0) {
         return di::Unexpected(di::BasicError(errno));
     }
@@ -29,7 +29,7 @@ auto sys_pread(int fd, u64 offset, di::Span<byte> data) -> Result<usize> {
 }
 
 auto sys_pwrite(int fd, u64 offset, di::Span<byte const> data) -> Result<usize> {
-    auto result = ::pwrite(fd, data.data(), data.size(), offset);
+    auto result = ::pwrite(fd, data.data(), data.size(), off_t(offset));
     if (result < 0) {
         return di::Unexpected(di::BasicError(errno));
     }
@@ -70,7 +70,7 @@ auto sys_open(di::PathView path, int flags, u16 create_mode) -> Result<int> {
 }
 
 auto sys_ftruncate(int fd, u64 size) -> Result<> {
-    auto result = ::ftruncate(fd, size);
+    auto result = ::ftruncate(fd, off_t(size));
     if (result < 0) {
         return di::Unexpected(di::BasicError(errno));
     }
@@ -86,7 +86,7 @@ auto sys_munmap(byte* data, size_t length) -> Result<> {
 }
 
 auto sys_mmap(void* addr, usize length, int prot, int flags, int fd, u64 offset) -> Result<byte*> {
-    auto result = ::mmap(addr, length, prot, flags, fd, offset);
+    auto* result = ::mmap(addr, length, prot, flags, fd, off_t(offset));
     if (result == MAP_FAILED) {
         return di::Unexpected(di::BasicError(errno));
     }
@@ -126,7 +126,7 @@ auto sys_execve(char const* path, char** args, char** env) -> Result<> {
 }
 
 auto sys_ptsname(int fd) -> Result<di::Path> {
-    auto result = ::ptsname(fd);
+    auto* result = ::ptsname(fd);
     if (result == nullptr) {
         return di::Unexpected(di::BasicError(errno));
     }
@@ -239,7 +239,7 @@ auto sys_lstat(di::PathView path) -> Result<Stat> {
     return output;
 }
 
-#ifndef __APPLE__
+#ifdef DIUS_HAVE_CLOCK_NANOSLEEP
 auto sys_clock_nanosleep(int clock, int flags, timespec timespec) -> Result<::timespec> {
     ::timespec rem;
     (void) clock_nanosleep(clock, flags, &timespec, &rem);

@@ -22,7 +22,7 @@ auto sys_dup2(int old_fd, int new_fd) -> Result<>;
 auto sys_open(di::PathView path, int flags, u16 create_mode) -> Result<int>;
 auto sys_ftruncate(int fd, u64 size) -> Result<>;
 
-auto sys_munmap(byte* addr, usize length) -> Result<>;
+auto sys_munmap(byte* data, usize length) -> Result<>;
 auto sys_mmap(void* addr, usize length, int prot, int flags, int fd, u64 offset) -> Result<byte*>;
 
 auto sys_ioctl(int fd, unsigned long code, void* arg) -> Result<>;
@@ -43,5 +43,5 @@ auto sys_mknod(di::PathView path, u32 type, u32 perms) -> Result<>;
 auto sys_stat(di::PathView path) -> Result<Stat>;
 auto sys_lstat(di::PathView path) -> Result<Stat>;
 
-auto sys_clock_nanosleep(int clock, int flags, timespec duration) -> Result<timespec>;
+auto sys_clock_nanosleep(int clock, int flags, timespec timespec) -> Result<::timespec>;
 }

@@ -48,7 +48,7 @@ auto Process::spawn_with_fork() && -> di::Result<ProcessHandle> {
 
             // No handle tty actions.
             if (m_controlling_tty) {
-                TRY(syscalls::sys_ioctl(m_controlling_tty.value(), TIOCSCTTY, 0));
+                TRY(syscalls::sys_ioctl(m_controlling_tty.value(), TIOCSCTTY, nullptr));
             }
             if (m_tty_window_size) {
                 auto [fd, size] = m_tty_window_size.value();
