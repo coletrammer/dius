@@ -6,11 +6,11 @@
         "nixpkgs": ["nixpkgs"]
       },
       "locked": {
-        "lastModified": 1741671284,
-        "narHash": "sha256-k3OYsfaVr3cgM9/S/kB7EgRpKeAKmSVeFRnhCwy8tRs=",
+        "lastModified": 1741842759,
+        "narHash": "sha256-vWqJvNvEPB51T2g7xYkORo4oCVlrJglJTSv1AIT3/AQ=",
         "owner": "coletrammer",
         "repo": "di",
-        "rev": "7f132a8bcd885df60f71047faeee5cba25a21708",
+        "rev": "cdbcae54acf7f95dc71a4a821c49366edc4541b2",
         "type": "github"
       },
       "original": {
