@@ -2,6 +2,7 @@
 
 #include "di/container/string/zstring.h"
 #include "dius/c_definitions.h"
+#include "dius/config.h"
 
 namespace dius::syscalls {
 auto sys_read(int fd, di::Span<byte> data) -> Result<usize> {

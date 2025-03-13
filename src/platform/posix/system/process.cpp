@@ -62,6 +62,10 @@ auto Process::spawn() && -> di::Result<ProcessHandle> {
     return di::move(*this).spawn_with_posix_spawn();
 }
 
+void install_dummy_signal_handler(Signal signal) {
+    (void) ::signal(int(signal), [](int) {});
+}
+
 auto mask_signal(Signal signal) -> di::Result<void> {
     auto set = sigset_t {};
     sigemptyset(&set);

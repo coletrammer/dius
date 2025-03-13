@@ -70,6 +70,8 @@ auto Process::spawn() && -> di::Result<ProcessHandle> {
     return di::move(*this).spawn_with_fork();
 }
 
+void install_dummy_signal_handler(Signal) {}
+
 auto mask_signal(Signal signal) -> di::Result<void> {
     auto mask = kernel_sigset_t(1) << (kernel_sigset_t(signal) - 1);
     return sys_rt_sigprocmask(SIG_BLOCK, &mask, nullptr);

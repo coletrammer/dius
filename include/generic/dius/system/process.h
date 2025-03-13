@@ -131,6 +131,7 @@ private:
     bool m_use_fork { false };
 };
 
+void install_dummy_signal_handler(Signal signal);
 auto mask_signal(Signal signal) -> di::Result<void>;
 auto wait_for_signal(Signal signal) -> di::Result<Signal>;
 
