@@ -29,9 +29,7 @@ namespace detail {
 
 constexpr inline auto print = detail::PrintFunction<1> {};
 constexpr inline auto eprint = detail::PrintFunction<2> {};
-constexpr inline auto dprint = detail::PrintFunction<2> {};
 
 constexpr inline auto println = detail::PrintlnFunction<1> {};
 constexpr inline auto eprintln = detail::PrintlnFunction<2> {};
-constexpr inline auto dprintln = detail::PrintlnFunction<2> {};
 }

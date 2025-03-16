@@ -1,4 +1,3 @@
-#ifndef DIUS_USE_RUNTIME
 #include <spawn.h>
 
 #include "dius/posix/open_mode_flags.h"
@@ -53,4 +52,3 @@ auto Process::spawn_with_posix_spawn() && -> di::Result<ProcessHandle> {
     return ProcessHandle(pid);
 }
 }
-#endif

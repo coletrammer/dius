@@ -55,6 +55,11 @@ target_compile_options(dius_dius PUBLIC "-Ulinux")
 target_link_libraries(dius_dius PUBLIC di::di)
 target_compile_definitions(dius_dius PUBLIC DI_CUSTOM_ASSERT_HANDLER DI_CUSTOM_PLATFORM=<dius/platform.h>)
 
+# When using GCC (and libstdc++), we need to link against stdc++exp for <backtrace> to work.
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_link_libraries(dius_dius PRIVATE stdc++exp)
+endif()
+
 # ---- Source files ----
 
 # This logic attempts to select the correct source file for the target configuration, and prevent duplicates. This is
