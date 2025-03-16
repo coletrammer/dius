@@ -24,19 +24,19 @@ void assert_fail(char const* source_text, char const* lhs_message, char const* r
 
     auto source_text_view = zstring_to_string_view(source_text);
 
-    dius::println("{}: {:?}"_sv, di::Styled("ASSERT"_sv, di::FormatColor::Red | di::FormatEffect::Bold),
-                  source_text_view);
+    dius::eprintln("{}: {:?}"_sv, di::Styled("ASSERT"_sv, di::FormatColor::Red | di::FormatEffect::Bold),
+                   source_text_view);
 
-    dius::println("{}: {}(): {}:{}:{}"_sv, di::Styled("AT"_sv, di::FormatEffect::Bold),
-                  zstring_to_string_view(loc.function_name()), zstring_to_string_view(loc.file_name()), loc.line(),
-                  loc.column());
+    dius::eprintln("{}: {}(): {}:{}:{}"_sv, di::Styled("AT"_sv, di::FormatEffect::Bold),
+                   zstring_to_string_view(loc.function_name()), zstring_to_string_view(loc.file_name()), loc.line(),
+                   loc.column());
     if (lhs_message) {
         auto lhs_message_view = zstring_to_string_view(lhs_message);
-        dius::println("{}: {}"_sv, di::Styled("LHS"_sv, di::FormatEffect::Bold), lhs_message_view);
+        dius::eprintln("{}: {}"_sv, di::Styled("LHS"_sv, di::FormatEffect::Bold), lhs_message_view);
     }
     if (rhs_message) {
         auto rhs_message_view = zstring_to_string_view(rhs_message);
-        dius::println("{}: {}"_sv, di::Styled("RHS"_sv, di::FormatEffect::Bold), rhs_message_view);
+        dius::eprintln("{}: {}"_sv, di::Styled("RHS"_sv, di::FormatEffect::Bold), rhs_message_view);
     }
 
 #if !defined(DIUS_USE_RUNTIME) && __has_include(<stacktrace>) && defined(DI_GCC)
