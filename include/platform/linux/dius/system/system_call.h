@@ -44,6 +44,7 @@ enum class Number : int {
     clock_gettime = __NR_clock_gettime,
     setsid = __NR_setsid,
     dup2 = __NR_dup2,
+    pipe2 = __NR_pipe2,
 };
 
 using SystemCallArg = unsigned long;

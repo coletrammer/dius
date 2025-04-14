@@ -118,6 +118,16 @@ DI_DEFINE_ENUM_BITWISE_OPERATIONS(OpenFlags)
 
 auto open_sync(di::PathView path, OpenMode open_mode, u16 create_mode = 0666, OpenFlags flags = OpenFlags::None)
     -> di::Expected<SyncFile, di::GenericCode>;
+
+/// @brief Open a pipe
+///
+/// @param flags The open flags allow specifying that the pipes should not be closed when executing a new process, and
+/// as such, are necessary for communicating with a sub-process.
+///
+/// @return A Expected<Tuple>, where the first file is the read end of the pipe and the second file is
+/// the write end of the pipe.
+auto open_pipe(OpenFlags flags) -> di::Expected<di::Tuple<SyncFile, SyncFile>, di::GenericCode>;
+
 auto open_psuedo_terminal_controller(OpenMode open_mode) -> di::Expected<SyncFile, di::GenericCode>;
 auto open_tempory_file() -> di::Expected<SyncFile, di::GenericCode>;
 auto read_to_string(di::PathView path) -> di::Result<di::String>;

@@ -305,6 +305,10 @@ private:
     }
 };
 
+#ifdef __SANITIZE_ADDRESS__
+#define DI_SANITIZER
+#endif
+
 #ifdef DI_SANITIZER
 // When compiling with UBSAN, using the address of a constexpr inline variable fails.
 // This includes checking for nullptr. To work around this, do not declare the variable
