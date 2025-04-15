@@ -39,6 +39,7 @@ auto sys_tcsetattr(int fd, termios const& termios) -> Result<>;
 
 auto sys_mkdir(di::PathView path, u32 perms) -> Result<>;
 auto sys_mknod(di::PathView path, u32 type, u32 perms) -> Result<>;
+auto sys_fchdir(i32 fd) -> Result<>;
 
 auto sys_stat(di::PathView path) -> Result<Stat>;
 auto sys_lstat(di::PathView path) -> Result<Stat>;

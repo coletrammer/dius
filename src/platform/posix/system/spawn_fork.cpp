@@ -1,14 +1,29 @@
+#include "dius/filesystem/directory_iterator.h"
 #include "dius/posix/open_mode_flags.h"
 #include "dius/posix/syscalls.h"
 #include "dius/posix/utils.h"
 #include "dius/system/process.h"
 
 namespace dius::system {
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 auto Process::spawn_with_fork() && -> di::Result<ProcessHandle> {
     // NOTE: TransparentString objects are guaranteed to be null-terminated on Linux.
     auto null_terminated_args =
         di::concat(m_arguments | di::transform(di::cdata), di::single(nullptr)) | di::to<di::Vector>();
     auto [_, env] = posix::make_env(posix::get_env(), m_extra_env_vars);
+
+    // Current working directory
+    auto current_working_directory = di::Optional<filesystem::DirectoryIterator> {};
+    for (auto& path : m_current_working_directory) {
+        // Only forward errors (like directory not existing) if requested.
+        auto result = filesystem::DirectoryIterator::create(di::move(path));
+        if (m_require_current_working_directory && !result) {
+            return di::Unexpected(di::move(result).error());
+        }
+        if (result) {
+            current_working_directory = di::move(result).value();
+        }
+    }
 
     auto pid = TRY(syscalls::sys_fork());
 
@@ -18,6 +33,13 @@ auto Process::spawn_with_fork() && -> di::Result<ProcessHandle> {
         (void) ([&] -> di::Result<> {
             if (m_new_session) {
                 TRY(syscalls::sys_setsid());
+            }
+
+            // Set current directory, if requested.
+            for (auto& cwd : current_working_directory) {
+                auto fd = cwd.file_descriptor();
+                TRY(syscalls::sys_fchdir(fd));
+                TRY(syscalls::sys_close(fd));
             }
 
             for (auto const& action : m_file_actions) {

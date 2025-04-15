@@ -9,7 +9,8 @@ static void arg_passing() {
                     di::to<di::Vector>();
         auto process = dius::system::Process(di::move(args));
 
-        auto result = di::move(process).use_fork(use_fork).spawn_and_wait();
+        auto result =
+            di::move(process).with_current_working_directory(FIXTURE_PATH ""_p).use_fork(use_fork).spawn_and_wait();
         ASSERT(result);
         ASSERT(result->exited());
         ASSERT_EQ(result->exit_code(), 0);

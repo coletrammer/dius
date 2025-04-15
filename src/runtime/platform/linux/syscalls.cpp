@@ -140,6 +140,10 @@ auto sys_mkdir(di::PathView path, u32 perms) -> Result<> {
     return system::system_call<int>(system::Number::mkdirat, AT_FDCWD, null_terminated_string, perms) % di::into_void;
 }
 
+auto sys_fchdir(i32 fd) -> Result<> {
+    return system::system_call<int>(system::Number::fchdir, fd) % di::into_void;
+}
+
 auto sys_stat(di::PathView path) -> Result<Stat> {
     auto raw_data = path.data();
     char null_terminated_string[4097];

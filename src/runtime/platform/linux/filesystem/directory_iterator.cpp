@@ -96,4 +96,8 @@ void DirectoryIterator::advance() {
         m_current_offset = 0;
     }
 }
+
+auto DirectoryIterator::file_descriptor() -> i32 {
+    return m_directory_handle.file_descriptor();
+}
 }

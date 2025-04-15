@@ -204,6 +204,14 @@ auto sys_mkdir(di::PathView path, u32 perms) -> Result<> {
     return {};
 }
 
+auto sys_fchdir(i32 fd) -> Result<> {
+    auto result = ::fchdir(fd);
+    if (result < 0) {
+        return di::Unexpected(di::BasicError(errno));
+    }
+    return {};
+}
+
 auto sys_stat(di::PathView path) -> Result<Stat> {
     auto raw_data = path.data();
     char null_terminated_string[4097];

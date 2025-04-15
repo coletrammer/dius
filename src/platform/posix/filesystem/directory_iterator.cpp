@@ -70,4 +70,11 @@ void DirectoryIterator::advance() {
     path.append(di::TransparentStringView { name.data(), di::to_unsigned(di::distance(name)) });
     m_current.emplace(DirectoryEntry(di::move(path), type));
 }
+
+auto DirectoryIterator::file_descriptor() -> i32 {
+    if (!m_dir) {
+        return -1;
+    }
+    return dirfd(m_dir.get());
+}
 }

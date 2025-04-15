@@ -106,6 +106,23 @@ public:
         return di::move(*this);
     }
 
+    /// @brief Attempt to spawn the process with this directory, but continue on failure.
+    ///
+    /// This is useful when the working directory is best effort (user provided, but may
+    /// not exist).
+    auto with_optional_current_working_directory(di::Path path) && -> Process {
+        m_current_working_directory = di::move(path);
+        m_require_current_working_directory = false;
+        return di::move(*this);
+    }
+
+    /// @brief Spawn the process with the provided working directory.
+    auto with_current_working_directory(di::Path path) && -> Process {
+        m_current_working_directory = di::move(path);
+        m_require_current_working_directory = true;
+        return di::move(*this);
+    }
+
     auto use_fork(bool b = true) && -> Process {
         m_use_fork = b;
         return di::move(*this);
@@ -124,6 +141,8 @@ private:
 
     di::Vector<di::TransparentString> m_arguments;
     di::Vector<FileAction> m_file_actions;
+    di::Optional<di::Path> m_current_working_directory;
+    bool m_require_current_working_directory { false };
     di::TreeMap<di::TransparentString, di::TransparentString> m_extra_env_vars;
     di::Optional<di::Tuple<i32, tty::WindowSize>> m_tty_window_size;
     di::Optional<i32> m_controlling_tty;

@@ -47,6 +47,8 @@ public:
 
     void advance_one();
 
+    auto file_descriptor() -> i32;
+
 private:
     void advance();
 
