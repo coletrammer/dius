@@ -35,5 +35,6 @@ inline auto make_env(char** environ, di::TreeMap<di::TransparentString, di::Tran
     return { di::move(storage), di::move(result) };
 }
 
+auto get_program_name() -> char const*;
 auto get_env() -> char**;
 }
