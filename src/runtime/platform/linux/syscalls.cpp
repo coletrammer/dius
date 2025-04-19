@@ -140,6 +140,32 @@ auto sys_mkdir(di::PathView path, u32 perms) -> Result<> {
     return system::system_call<int>(system::Number::mkdirat, AT_FDCWD, null_terminated_string, perms) % di::into_void;
 }
 
+auto sys_rmdir(di::PathView path) -> Result<> {
+    auto raw_data = path.data();
+    char null_terminated_string[4097];
+    if (raw_data.size() > sizeof(null_terminated_string) - 1) {
+        return di::Unexpected(di::BasicError::FilenameTooLong);
+    }
+
+    di::copy(raw_data, null_terminated_string);
+    null_terminated_string[raw_data.size()] = '\0';
+
+    return system::system_call<int>(system::Number::rmdir, null_terminated_string) % di::into_void;
+}
+
+auto sys_unlink(di::PathView path) -> Result<> {
+    auto raw_data = path.data();
+    char null_terminated_string[4097];
+    if (raw_data.size() > sizeof(null_terminated_string) - 1) {
+        return di::Unexpected(di::BasicError::FilenameTooLong);
+    }
+
+    di::copy(raw_data, null_terminated_string);
+    null_terminated_string[raw_data.size()] = '\0';
+
+    return system::system_call<int>(system::Number::unlink, null_terminated_string) % di::into_void;
+}
+
 auto sys_fchdir(i32 fd) -> Result<> {
     return system::system_call<int>(system::Number::fchdir, fd) % di::into_void;
 }

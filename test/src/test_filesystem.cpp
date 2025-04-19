@@ -12,15 +12,13 @@ namespace filesystem {
 constexpr auto temp_directory_path = "/tmp/test_dius"_pv;
 
 static auto remove_temp_directory() {
-    auto args = di::Array { "rm"_tsv.to_owned(), "-rf"_tsv.to_owned(), temp_directory_path.data().to_owned() } |
-                di::to<di::Vector>();
-    ASSERT(dius::system::Process(di::move(args)).spawn_and_wait());
+    ASSERT(dius::fs::remove_all(temp_directory_path));
 }
 
 static auto setup_temp_directory() {
     remove_temp_directory();
 
-    ASSERT(dius::fs::create_directory(temp_directory_path));
+    ASSERT(dius::fs::create_directories(temp_directory_path));
 
     return di::ScopeExit([] {
         remove_temp_directory();

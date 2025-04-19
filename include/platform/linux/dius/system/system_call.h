@@ -47,6 +47,8 @@ enum class Number : int {
     pipe2 = __NR_pipe2,
     chdir = __NR_chdir,
     fchdir = __NR_fchdir,
+    rmdir = __NR_rmdir,
+    unlink = __NR_unlink,
 };
 
 using SystemCallArg = unsigned long;
