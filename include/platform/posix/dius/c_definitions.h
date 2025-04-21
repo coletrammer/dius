@@ -12,6 +12,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/un.h>
+#include <sys/utsname.h>
 #include <sys/wait.h>
 #include <termios.h>
 #include <time.h>
@@ -19,4 +20,5 @@
 
 namespace dius::syscalls {
 using Stat = struct ::stat;
+using UtsName = struct ::utsname;
 }

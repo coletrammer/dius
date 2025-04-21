@@ -46,5 +46,6 @@ auto sys_rmdir(di::PathView path) -> Result<>;
 auto sys_stat(di::PathView path) -> Result<Stat>;
 auto sys_lstat(di::PathView path) -> Result<Stat>;
 
+auto sys_uname() -> Result<UtsName>;
 auto sys_clock_nanosleep(int clock, int flags, timespec timespec) -> Result<::timespec>;
 }

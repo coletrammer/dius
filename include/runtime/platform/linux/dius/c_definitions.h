@@ -13,6 +13,7 @@
 #include <linux/time.h>
 #include <linux/types.h>
 #include <linux/un.h>
+#include <linux/utsname.h>
 #include <linux/wait.h>
 
 #include "di/types/integers.h"
@@ -37,4 +38,6 @@ struct Stat {
     timespec st_ctime;
     di::Array<di::Byte, 24> padding_end;
 };
+
+using UtsName = struct ::new_utsname;
 }

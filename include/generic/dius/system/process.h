@@ -160,6 +160,9 @@ auto get_program_name() -> di::PathView;
 /// @brief Get the environment variables, as a read-only map
 auto get_environment() -> di::TreeMap<di::TransparentString, di::TransparentString> const&;
 
+/// @brief Get the hostname of the current system
+auto get_hostname() -> di::Result<di::TransparentString>;
+
 /// @brief Exit the currently executing thread.
 ///
 /// @warning It is undefined behavior to call this function when there exists RAII stack-allocated variables

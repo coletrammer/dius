@@ -282,6 +282,15 @@ auto sys_lstat(di::PathView path) -> Result<Stat> {
     return output;
 }
 
+auto sys_uname() -> Result<UtsName> {
+    auto utsname = UtsName {};
+    auto result = ::uname(&utsname);
+    if (result < 0) {
+        return di::Unexpected(di::BasicError(errno));
+    }
+    return utsname;
+}
+
 #ifdef DIUS_HAVE_CLOCK_NANOSLEEP
 auto sys_clock_nanosleep(int clock, int flags, timespec timespec) -> Result<::timespec> {
     ::timespec rem;

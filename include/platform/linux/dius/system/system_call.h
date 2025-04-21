@@ -49,6 +49,7 @@ enum class Number : int {
     fchdir = __NR_fchdir,
     rmdir = __NR_rmdir,
     unlink = __NR_unlink,
+    uname = __NR_uname,
 };
 
 using SystemCallArg = unsigned long;

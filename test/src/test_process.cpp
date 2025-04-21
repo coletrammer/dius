@@ -17,6 +17,12 @@ static void arg_passing() {
     }
 }
 
+static void hostname() {
+    auto rv = dius::system::get_hostname();
+    ASSERT(rv);
+    ASSERT(!rv.value().empty());
+}
+
 static void env() {
     auto program_name = dius::system::get_program_name();
     ASSERT(program_name.ends_with("dius_test"_pv));
@@ -26,5 +32,6 @@ static void env() {
 }
 
 TEST(process, arg_passing)
+TEST(process, hostname)
 TEST(process, env)
 }
