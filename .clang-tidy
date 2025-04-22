@@ -1,8 +1,7 @@
 ---
 WarningsAsErrors: "*"
 FormatStyle: none
-HeaderFilterRegex: .*
-ExcludeHeaderFilterRegex: ".*(ccpp)/.*|.*limine.h.*"
+HeaderFilterRegex: dius/.*
 ExtraArgs: [-std=gnu++26, -fconstexpr-steps=10000000, -Wno-unknown-warning-option, -fsized-deallocation]
 Checks: >
   -*,
