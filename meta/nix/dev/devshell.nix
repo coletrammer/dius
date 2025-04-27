@@ -17,6 +17,8 @@
       devShells.default = pkgs.mkShell.override { inherit stdenv; } {
         shellHook = ''
           export DIUS_DOXYGEN_AWESOME_DIR=${inputs.doxygen-awesome-css};
+          export DIUS_UNICODE_DATABASE_DIR=${pkgs.unicode-character-database}/share/unicode
+          export DIUS_UNICODE_EMOJI_DATABASE_DIR=${pkgs.unicode-emoji}/share/unicode/emoji
         '';
         packages =
           [
@@ -37,6 +39,9 @@
             just
             jq
             fzf
+
+            # python for parsing Unicode database and generating source files
+            python3
 
             # Docs
             doxygen
