@@ -1,5 +1,5 @@
 #include "di/test/prelude.h"
-#include "dius/unicode/unicode.h"
+#include "dius/unicode/east_asian_width.h"
 
 namespace unicode {
 using namespace dius::unicode;
@@ -17,7 +17,7 @@ static void east_asian_width() {
     };
 
     for (auto [input, expected] : cases) {
-        auto result = lookup_east_asian_width(input);
+        auto result = dius::unicode::east_asian_width(input);
         ASSERT_EQ(result, expected);
     }
 }
