@@ -58,6 +58,12 @@ class UnicodeProperty:
     # Property has no values and is a simple yes/no
     boolean: bool = False
 
+    # Property file defines multiple properties
+    multi_file: bool = False
+
+    # Short name found via PropertyAlias.txt
+    short_name: str = ""
+
     # Mapping from short value aliases to long aliases
     values_map: Dict[str, str] = field(default_factory=lambda: {})
 
@@ -71,19 +77,48 @@ class UnicodeProperty:
         return self.name.lower()
 
     def lookup_value(self, short: str) -> str:
+        if short not in self.values_map:
+            return short.replace("_", "")
         return self.values_map[short]
 
     def values(self) -> List[str]:
         return list(self.values_map.values())
 
+    def lookup_code_point(self, code_point: int) -> str:
+        res = self.fallback
+        i = bisect.bisect_left(
+            self.values_table,
+            code_point,
+            key=lambda x: x.range().end - 1,
+        )
+        if i < len(self.values_table) and self.values_table[i].range().contains(
+            code_point
+        ):
+            res = self.values_table[i].property
+        return res
+
+
+GENERAL_CATEGORY = UnicodeProperty(
+    "General_Category", "extracted/DerivedGeneralCategory.txt", "Unassigned"
+)
+GRAPHEME_CLUSTER_BREAK = UnicodeProperty(
+    "Grapheme_Cluster_Break", "auxiliary/GraphemeBreakProperty.txt", "Other"
+)
+EXTENDED_PICTOGRAPHIC = UnicodeProperty(
+    "Extended_Pictographic", "emoji/emoji-data.txt", "No", True
+)
+
+INDIC_CONJUNCT_BREAK = UnicodeProperty(
+    "Indic_Conjunct_Break", "DerivedCoreProperties.txt", "None", False, True
+)
 
 UNICODE_PROPERTIES = [
+    GENERAL_CATEGORY,
+    EXTENDED_PICTOGRAPHIC,
+    INDIC_CONJUNCT_BREAK,
+    GRAPHEME_CLUSTER_BREAK,
     UnicodeProperty("East_Asian_Width", "EastAsianWidth.txt", "Neutral"),
-    UnicodeProperty(
-        "General_Category", "extracted/DerivedGeneralCategory.txt", "Unassigned"
-    ),
     UnicodeProperty("Emoji", "emoji/emoji-data.txt", "No", True),
-    UnicodeProperty("Extended_Pictographic", "emoji/emoji-data.txt", "No", True),
     UnicodeProperty("Name", "extracted/DerivedName.txt"),
 ]
 
@@ -142,13 +177,19 @@ def parse_property_file(path: str, prop: UnicodeProperty) -> List[UnicodePropert
             if line == "":
                 continue
 
-            sequence, property = line.split(";")
+            sequence, property = line.split(";")[:2]
             sequence = [
                 CodePointRange.from_code_points(x) for x in sequence.strip().split(" ")
             ]
             if prop.boolean:
                 if property.strip() == prop.name:
                     result.append(UnicodePropertyRange(sequence, "Yes"))
+            elif prop.multi_file:
+                if property.strip() == prop.name or property.strip() == prop.short_name:
+                    value = line.split(";")[2]
+                    result.append(
+                        UnicodePropertyRange(sequence, prop.lookup_value(value.strip()))
+                    )
             elif prop.name == "Name":
                 result.append(
                     UnicodePropertyRange(
@@ -163,7 +204,7 @@ def parse_property_file(path: str, prop: UnicodeProperty) -> List[UnicodePropert
     return result
 
 
-def gen_name_header(path: str, property: UnicodeProperty, category: UnicodeProperty):
+def gen_name_header(path: str, property: UnicodeProperty):
     # Write the file
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as file:
@@ -178,16 +219,7 @@ def gen_name_header(path: str, property: UnicodeProperty, category: UnicodePrope
         )
 
         for value in property.values_table:
-            cat = "Unassigned"
-            i = bisect.bisect_left(
-                category.values_table,
-                value.range().start,
-                key=lambda x: x.range().end - 1,
-            )
-            if i < len(category.values_table) and category.values_table[
-                i
-            ].range().contains(value.range().start):
-                cat = category.values_table[i].property
+            cat = GENERAL_CATEGORY.lookup_code_point(value.range().start)
             if "Format" in cat or "Separator" in cat:
                 file.write(
                     f"constexpr inline auto {value.property} = c32({hex(value.range().start)});\n",
@@ -225,6 +257,10 @@ def gen_property_header(path: str, property: UnicodeProperty):
             property.values_map = {
                 k: v for k, v in property.values_map.items() if len(k) > 1
             }
+        if property.name == "Grapheme_Cluster_Break":
+            # These are unused
+            for k in ["EB", "EM", "GAZ", "EBG"]:
+                del property.values_map[k]
 
         for value in property.values():
             file.write(
@@ -314,6 +350,35 @@ def gen_property_implementation(path: str, property: UnicodeProperty):
     subprocess.run(["clang-format", "-i", path])
 
 
+def validate_grapheme_cluster_assumptions():
+    # Verify all extended pictographs have grapheme property other
+    pictographs = set()
+    for r in EXTENDED_PICTOGRAPHIC.values_table:
+        for c in range(r.range().start, r.range().end):
+            pictographs.add(GRAPHEME_CLUSTER_BREAK.lookup_code_point(c))
+    assert pictographs == {"Other"}
+
+    # Verify all pictographs don't have indic properties
+    pictographs_indic = set()
+    for r in EXTENDED_PICTOGRAPHIC.values_table:
+        for c in range(r.range().start, r.range().end):
+            pictographs_indic.add(INDIC_CONJUNCT_BREAK.lookup_code_point(c))
+    assert pictographs_indic == {"None"}
+
+    # Verify indic consonants are "Other", while indic=extend and indic=linker are "Extend". ZWJ is a special case.
+    indic_grapheme_properties = defaultdict(lambda: set())
+    for r in INDIC_CONJUNCT_BREAK.values_table:
+        for c in range(r.range().start, r.range().end):
+            indic_grapheme_properties[r.property].add(
+                GRAPHEME_CLUSTER_BREAK.lookup_code_point(c)
+            )
+    assert indic_grapheme_properties == {
+        "Extend": {"Extend", "ZWJ"},
+        "Consonant": {"Other"},
+        "Linker": {"Extend"},
+    }
+
+
 def main():
     args = parser.parse_args()
 
@@ -326,7 +391,8 @@ def main():
     )
 
     for prop in UNICODE_PROPERTIES:
-        prop.values_map = value_aliases[property_aliases[prop.name]]
+        prop.short_name = property_aliases[prop.name]
+        prop.values_map = value_aliases[prop.short_name]
         prop.values_table = parse_property_file(
             input_path(prop.input_file),
             prop,
@@ -334,17 +400,16 @@ def main():
         # Sort by range start, so we can use binary search for the lookup
         prop.values_table.sort(key=lambda x: x.sequence[0].start)
 
-        if prop.name == "Name":
-            general_category = None
-            for p in UNICODE_PROPERTIES:
-                if p.name == "General_Category":
-                    general_category = p
-            if general_category is None:
-                raise Exception("Failed to find General_Category")
+        if (
+            prop.name == "Indic_Conjunct_Break"
+            or prop.name == "Extended_Pictographic"
+            or prop.name == "Grapheme_Cluster_Break"
+        ):
+            continue
+        elif prop.name == "Name":
             gen_name_header(
                 output_path(f"include/generic/dius/unicode/{prop.cpp_file_name()}.h"),
                 prop,
-                general_category,
             )
         else:
             gen_property_header(
@@ -355,6 +420,54 @@ def main():
                 output_path(f"src/generic/unicode/{prop.cpp_file_name()}.cpp"),
                 prop,
             )
+
+    # We extend the grapheme cluster properties to include the extended pictographic
+    # property as well as the indic conjunct break property, to allow for grapheme
+    # segmentation using only a single lookup. This also simplifies the internal
+    # state machine inputs.
+    validate_grapheme_cluster_assumptions()
+
+    GRAPHEME_CLUSTER_BREAK.values_map["oep"] = "Other_ExtendedPictographic"
+    GRAPHEME_CLUSTER_BREAK.values_map["eie"] = "Extend_IndicConjunctBreak_Extend"
+    GRAPHEME_CLUSTER_BREAK.values_map["eil"] = "Extend_IndicConjunctBreak_Linker"
+    GRAPHEME_CLUSTER_BREAK.values_map["oic"] = "Other_IndicConjunctBreak_Consonant"
+
+    # Now rebuild the lookup table by iterating over every possible code point
+    new_values: List[UnicodePropertyRange] = []
+    for c in range(0x10FFFF + 1):
+        orig = GRAPHEME_CLUSTER_BREAK.lookup_code_point(c)
+        indic = INDIC_CONJUNCT_BREAK.lookup_code_point(c)
+        pictographic = EXTENDED_PICTOGRAPHIC.lookup_code_point(c)
+        new = orig
+        if indic == "Extend" and orig != "ZWJ":
+            new = "Extend_IndicConjunctBreak_Extend"
+        elif indic == "Linker":
+            new = "Extend_IndicConjunctBreak_Linker"
+        elif indic == "Consonant":
+            new = "Other_IndicConjunctBreak_Consonant"
+        elif pictographic == "Yes":
+            new = "Other_ExtendedPictographic"
+        p = None
+        if len(new_values) > 0:
+            p = new_values[-1]
+        if p is not None and p.property == new:
+            p.range().end += 1
+            continue
+        new_values.append(UnicodePropertyRange([CodePointRange(c, c + 1)], new))
+    GRAPHEME_CLUSTER_BREAK.values_table = new_values
+
+    gen_property_header(
+        output_path(
+            f"include/generic/dius/unicode/{GRAPHEME_CLUSTER_BREAK.cpp_file_name()}.h"
+        ),
+        GRAPHEME_CLUSTER_BREAK,
+    )
+    gen_property_implementation(
+        output_path(
+            f"src/generic/unicode/{GRAPHEME_CLUSTER_BREAK.cpp_file_name()}.cpp"
+        ),
+        GRAPHEME_CLUSTER_BREAK,
+    )
 
 
 if __name__ == "__main__":
