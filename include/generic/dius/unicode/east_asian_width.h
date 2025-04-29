@@ -15,7 +15,7 @@ enum class EastAsianWidth {
     Wide,
 };
 
-constexpr auto tag_invoke(di::InPlaceType<EastAsianWidth>) {
+constexpr auto tag_invoke(di::Tag<di::reflect>, di::InPlaceType<EastAsianWidth>) {
     using enum EastAsianWidth;
     return di::make_enumerators<"EastAsianWidth">(
         di::enumerator<"Ambiguous", Ambiguous>, di::enumerator<"Fullwidth", Fullwidth>,

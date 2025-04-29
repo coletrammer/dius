@@ -270,7 +270,7 @@ def gen_property_header(path: str, property: UnicodeProperty):
         file.write(
             "};\n"
             "\n"
-            f"constexpr auto tag_invoke(di::InPlaceType<{property.cpp_enum_name()}>) {{\n"
+                f"constexpr auto tag_invoke(di::Tag<di::reflect>, di::InPlaceType<{property.cpp_enum_name()}>) {{\n"
             f"    using enum {property.cpp_enum_name()};\n"
             f'    return di::make_enumerators<"{property.cpp_enum_name()}">(\n'
         )

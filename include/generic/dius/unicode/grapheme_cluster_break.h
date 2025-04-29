@@ -27,7 +27,7 @@ enum class GraphemeClusterBreak {
     Other_IndicConjunctBreak_Consonant,
 };
 
-constexpr auto tag_invoke(di::InPlaceType<GraphemeClusterBreak>) {
+constexpr auto tag_invoke(di::Tag<di::reflect>, di::InPlaceType<GraphemeClusterBreak>) {
     using enum GraphemeClusterBreak;
     return di::make_enumerators<"GraphemeClusterBreak">(
         di::enumerator<"Control", Control>, di::enumerator<"CR", CR>, di::enumerator<"Extend", Extend>,

@@ -5,7 +5,7 @@
 #include "dius/unicode/name.h"
 #include "dius/unicode/width.h"
 
-namespace unicode {
+namespace unicode_properties {
 using namespace dius::unicode;
 
 static void east_asian_width() {
@@ -74,7 +74,7 @@ static void code_point_width() {
     }
 }
 
-TEST(unicode, east_asian_width)
-TEST(unicode, general_category)
-TEST(unicode, code_point_width)
+TEST(unicode_properties, east_asian_width)
+TEST(unicode_properties, general_category)
+TEST(unicode_properties, code_point_width)
 }

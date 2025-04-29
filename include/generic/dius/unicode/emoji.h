@@ -11,7 +11,7 @@ enum class Emoji {
     Yes,
 };
 
-constexpr auto tag_invoke(di::InPlaceType<Emoji>) {
+constexpr auto tag_invoke(di::Tag<di::reflect>, di::InPlaceType<Emoji>) {
     using enum Emoji;
     return di::make_enumerators<"Emoji">(di::enumerator<"No", No>, di::enumerator<"Yes", Yes>);
 }

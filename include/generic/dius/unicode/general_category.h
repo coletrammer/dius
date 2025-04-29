@@ -40,7 +40,7 @@ enum class GeneralCategory {
     SpaceSeparator,
 };
 
-constexpr auto tag_invoke(di::InPlaceType<GeneralCategory>) {
+constexpr auto tag_invoke(di::Tag<di::reflect>, di::InPlaceType<GeneralCategory>) {
     using enum GeneralCategory;
     return di::make_enumerators<"GeneralCategory">(
         di::enumerator<"Control", Control>, di::enumerator<"Format", Format>, di::enumerator<"Unassigned", Unassigned>,
