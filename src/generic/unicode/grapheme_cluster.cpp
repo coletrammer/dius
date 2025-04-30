@@ -17,8 +17,10 @@ enum class GraphemeClusterState : u8 {
     // crlf := CR LF | CR | LF
     PendingCRLF, // Start for matching LF after CR
 
-    // precore* core postcore*
-    PendingPrecore,  // State after matching anything at least 1 item from precore
+    // precore := Prepend
+    PendingPrecore, // State after matching anything at least 1 item from precore
+
+    // postcore := [Extend ZWJ SpacingMark]
     PendingPostcore, // State after matching anything at least 1 item from postcore
 
     // core := hangul-syllable | RI-Sequence | xpicto-sequence | conjunctCluster | [ ^Control CR LF ]
@@ -27,9 +29,19 @@ enum class GraphemeClusterState : u8 {
     // RI-Sequence := RI RI
     PendingRegionalIndiciator, // State after matching one RI
 
+    // hangul-syllable := L* (V+ | LV V* | LVT) T* | L+ | T+
+    PendingHangulL, // State after matching an initial "L"
+    PendingHangulT, // State after matching an initial "T"
+    PendingHangulV, // State after matching a "V"
+
     // xpicto-sequence := \p{Extended_Pictographic} (Extend* ZWJ \p{Extended_Pictographic})*
     PendingZWJPictographic, // State before getting a ZWJ
     PendingPictographic,    // State before getting a ZWJ
+
+    // conjunctCluster := \p{InCB=Consonant} ([\p{InCB=Extend} \p{InCB=Linker}]* \p{InCB=Linker} [\p{InCB=Extend}
+    // \p{InCB=Linker}]* \p{InCB=Consonant})+
+    PendingIndicLinker,    // State before matching the first InCB=Linker
+    PendingIndicConsonant, // State after matching the first InCb=Linker
 
     // Count of states
     StateCount,
@@ -56,9 +68,108 @@ constexpr static auto pending_postcore(GraphemeClusterBreak b) -> GraphemeCluste
     }
 }
 
+constexpr static auto pending_indic_linker(GraphemeClusterBreak b) -> GraphemeClusterState {
+    using enum GraphemeClusterBreak;
+    // This state means we're expected InCB=Linker before we can get a consonant.
+    // conjunctCluster := \p{InCB=Consonant} ([\p{InCB=Extend} \p{InCB=Linker}]* \p{InCB=Linker} [\p{InCB=Extend}
+    // \p{InCB=Linker}]* \p{InCB=Consonant})+
+    switch (b) {
+        case GraphemeClusterBreak::Extend_IndicConjunctBreak_Linker:
+            // Now we expect a InCB=Consonant.
+            return GraphemeClusterState::PendingIndicConsonant;
+        case Extend_IndicConjunctBreak_Extend:
+        case ZWJ:
+            // Keep matching until we get InCB=Linker
+            return GraphemeClusterState::PendingIndicLinker;
+        default:
+            // All non consonants are either Extend or ZWJ, meaning they would've matched postcore. When
+            // we fail to match here we're now effectively just in postcore.
+            return pending_postcore(b);
+    }
+    di::unreachable();
+}
+
+constexpr static auto pending_indic_consonant(GraphemeClusterBreak b) -> GraphemeClusterState {
+    using enum GraphemeClusterBreak;
+    // This state means we're expected a InCB=Consonant
+    // conjunctCluster := \p{InCB=Consonant} ([\p{InCB=Extend} \p{InCB=Linker}]* \p{InCB=Linker} [\p{InCB=Extend}
+    // \p{InCB=Linker}]* \p{InCB=Consonant})+
+    switch (b) {
+        case Other_IndicConjunctBreak_Consonant:
+            // Keep matching more blocks (+ case)
+            return GraphemeClusterState::PendingIndicLinker;
+        case Extend_IndicConjunctBreak_Linker:
+        case Extend_IndicConjunctBreak_Extend:
+        case ZWJ:
+            // Keep trying to find an InCB=Consonant
+            return GraphemeClusterState::PendingIndicConsonant;
+        default:
+            // All non consonants are either Extend or ZWJ, meaning they would've matched postcore. When
+            // we fail to match here we're now effectively just in postcore.
+            return pending_postcore(b);
+    }
+    di::unreachable();
+}
+
+constexpr static auto pending_hangul_v(GraphemeClusterBreak b) -> GraphemeClusterState {
+    using enum GraphemeClusterBreak;
+    // This state matches the part of the sequence once a V has occurred.
+    // L* (V+ | LV V* | LVT) T*
+    switch (b) {
+        case V:
+            // Keep matching more.
+            return GraphemeClusterState::PendingHangulV;
+        case T:
+            // Now we just match any trailing T.
+            return GraphemeClusterState::PendingHangulT;
+        default:
+            // Since we got something other than V or T, we have to move to postcore.
+            // This is expected as T* fully is optional.
+            return pending_postcore(b);
+    }
+    di::unreachable();
+}
+
+constexpr static auto pending_hangul_t(GraphemeClusterBreak b) -> GraphemeClusterState {
+    using enum GraphemeClusterBreak;
+    // This state matches the part of the sequence once a T has occurred.
+    // L* (V+ | LV V* | LVT) T*
+    switch (b) {
+        case T:
+            // Keep matching more.
+            return GraphemeClusterState::PendingHangulT;
+        default:
+            // Since we got something other than T, we have to move to postcore.
+            return pending_postcore(b);
+    }
+    di::unreachable();
+}
+
+constexpr static auto pending_hangul_l(GraphemeClusterBreak b) -> GraphemeClusterState {
+    using enum GraphemeClusterBreak;
+    // This state matches the part of the sequence once an L has occurred
+    // L* (V+ | LV V* | LVT) T* | L+
+    switch (b) {
+        case L:
+            // Keep matching more.
+            return GraphemeClusterState::PendingHangulL;
+        case V:
+        case LV:
+            // Now match V
+            return GraphemeClusterState::PendingHangulV;
+        case LVT:
+            // Now match T
+            return GraphemeClusterState::PendingHangulT;
+        default:
+            // We've matched L+, so continue to post core
+            return pending_postcore(b);
+    }
+    di::unreachable();
+}
+
 constexpr static auto pending_pictographic(GraphemeClusterBreak b) -> GraphemeClusterState {
     using enum GraphemeClusterBreak;
-    // This state maches the end of this sequence.
+    // This state matches the end of this sequence.
     // (Extend* ZWJ \p{Extended_Pictographic})*
     switch (b) {
         case Other_ExtendedPictographic:
@@ -75,7 +186,7 @@ constexpr static auto pending_pictographic(GraphemeClusterBreak b) -> GraphemeCl
 
 constexpr static auto pending_zwj_pictographic(GraphemeClusterBreak b) -> GraphemeClusterState {
     using enum GraphemeClusterBreak;
-    // This state maches the beginning of this sequence.
+    // This state matches the beginning of this sequence.
     // (Extend* ZWJ \p{Extended_Pictographic})*
     switch (b) {
         case Extend:
@@ -115,8 +226,16 @@ constexpr static auto pending_precore(GraphemeClusterBreak b) -> GraphemeCluster
         // Prepend
         case Prepend:
             return GraphemeClusterState::PendingPrecore;
+
         // hangul-syllable := L* (V+ | LV V* | LVT) T* | L+ | T+
-        // TODO:
+        case L:
+            return GraphemeClusterState::PendingHangulL;
+        case V:
+        case LV:
+            return GraphemeClusterState::PendingHangulV;
+        case LVT:
+        case T:
+            return GraphemeClusterState::PendingHangulT;
 
         // RI-Sequence := RI RI
         case RegionalIndicator:
@@ -128,7 +247,8 @@ constexpr static auto pending_precore(GraphemeClusterBreak b) -> GraphemeCluster
 
         // conjunctCluster := \p{InCB=Consonant} ([\p{InCB=Extend} \p{InCB=Linker}]* \p{InCB=Linker} [\p{InCB=Extend}
         // \p{InCB=Linker}]* \p{InCB=Consonant})+
-        // TODO:
+        case Other_IndicConjunctBreak_Consonant:
+            return GraphemeClusterState::PendingIndicLinker;
 
         // [^Control CR LF]
         case Control:
@@ -186,10 +306,20 @@ constexpr static auto invoke_state(GraphemeClusterState current, GraphemeCluster
             return pending_postcore(b);
         case PendingRegionalIndiciator:
             return pending_regional_indicator(b);
+        case PendingHangulT:
+            return pending_hangul_t(b);
+        case PendingHangulV:
+            return pending_hangul_v(b);
+        case PendingHangulL:
+            return pending_hangul_l(b);
         case PendingZWJPictographic:
             return pending_zwj_pictographic(b);
         case PendingPictographic:
             return pending_pictographic(b);
+        case PendingIndicLinker:
+            return pending_indic_linker(b);
+        case PendingIndicConsonant:
+            return pending_indic_consonant(b);
         case StateCount:
             break;
     }
@@ -235,7 +365,8 @@ auto GraphemeClusterer::is_boundary(c32 code_point) -> bool {
         // When exiting directly to the ground state, we need to perform another lookup.
         next_state = lookup_table[u8(next_state)][u8(b)];
         was_ground = true;
-    } else if (next_state == GraphemeClusterState::GroundConsume) {
+    }
+    if (next_state == GraphemeClusterState::GroundConsume) {
         next_state = GraphemeClusterState::Ground;
     }
 

@@ -8,7 +8,7 @@ import re
 import subprocess
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Dict, List, Self
+from typing import Dict, List, Self, Tuple
 
 parser = argparse.ArgumentParser(
     description="Generates C++ source files from the Unicode Database for the dius library",
@@ -169,6 +169,29 @@ def parse_property_value_aliases(path: str) -> Dict[str, Dict[str, str]]:
     return result
 
 
+def parse_grapheme_break_test(path: str) -> List[List[Tuple[int, bool]]]:
+    result = []
+    with open(path, "r") as file:
+        for line in file.readlines():
+            res = []
+            line = re.sub(re.compile("#.*"), "", line.strip())
+            if line == "":
+                continue
+
+            is_break = False
+            for item in line.replace("\t", "").split(" "):
+                if item == "÷":
+                    is_break = True
+                elif item == "×":
+                    is_break = False
+                else:
+                    c = int(item, 16)
+                    res.append((c, is_break))
+            result.append(res)
+
+    return result
+
+
 def parse_property_file(path: str, prop: UnicodeProperty) -> List[UnicodePropertyRange]:
     result = []
     with open(path, "r") as file:
@@ -202,6 +225,54 @@ def parse_property_file(path: str, prop: UnicodeProperty) -> List[UnicodePropert
                     UnicodePropertyRange(sequence, prop.lookup_value(property.strip()))
                 )
     return result
+
+
+def gen_grapheme_break_test_data(path: str, data: List[List[Tuple[int, bool]]]):
+    # Write the file
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as file:
+        file.write(
+            "// This file was generated automatically by unicode.py\n"
+            "\n"
+            "#pragma once\n"
+            "\n"
+            '#include "di/types/prelude.h"\n'
+            '#include "di/vocab/array/prelude.h"\n'
+            '#include "di/vocab/span/prelude.h"\n'
+            '#include "di/format/prelude.h"\n'
+            "\n"
+            "namespace dius::unicode {\n"
+            "\n"
+            "struct GraphemeBreakTestCodePoint {\n"
+            "    u32 code_point { 0 };\n"
+            "    bool is_break { false };\n"
+            "\n"
+            "    auto operator==(GraphemeBreakTestCodePoint const&) const -> bool = default;\n"
+            "\n"
+            "    auto to_string() const {\n"
+            "        return *di::present(\"{} {:04X} \"_sv, is_break ? U'÷' : U'×', code_point);\n"
+            "    }\n"
+            "};\n"
+            "\n"
+            "namespace detail {\n"
+            "using T = GraphemeBreakTestCodePoint;\n"
+        )
+        for i, case in enumerate(data):
+            as_str = f", ".join([f"T({hex(c)}, {str(b).lower()})" for c, b in case])
+            file.write(
+                f"    constexpr inline auto test_{i} = di::Array<GraphemeBreakTestCodePoint, {len(case)}>{{{as_str}}};\n"
+            )
+        file.write(
+            "}\n"
+            "\n"
+            f"constexpr inline auto grapheme_break_test_data = di::Array<di::Span<GraphemeBreakTestCodePoint const>, {len(data)}> {{\n"
+        )
+        for i, _ in enumerate(data):
+            file.write(f"    detail::test_{i},")
+        file.write("};\n" "}\n")
+
+    # Auto-format
+    subprocess.run(["clang-format", "-i", path])
 
 
 def gen_name_header(path: str, property: UnicodeProperty):
@@ -270,7 +341,7 @@ def gen_property_header(path: str, property: UnicodeProperty):
         file.write(
             "};\n"
             "\n"
-                f"constexpr auto tag_invoke(di::Tag<di::reflect>, di::InPlaceType<{property.cpp_enum_name()}>) {{\n"
+            f"constexpr auto tag_invoke(di::Tag<di::reflect>, di::InPlaceType<{property.cpp_enum_name()}>) {{\n"
             f"    using enum {property.cpp_enum_name()};\n"
             f'    return di::make_enumerators<"{property.cpp_enum_name()}">(\n'
         )
@@ -420,6 +491,14 @@ def main():
                 output_path(f"src/generic/unicode/{prop.cpp_file_name()}.cpp"),
                 prop,
             )
+
+    # Create test data for grapheme cluster
+    grapheme_tests = parse_grapheme_break_test(
+        input_path("auxiliary/GraphemeBreakTest.txt")
+    )
+    gen_grapheme_break_test_data(
+        output_path("test/src/grapheme_break_test_data.h"), grapheme_tests
+    )
 
     # We extend the grapheme cluster properties to include the extended pictographic
     # property as well as the indic conjunct break property, to allow for grapheme
