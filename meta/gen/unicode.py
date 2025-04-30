@@ -119,6 +119,8 @@ UNICODE_PROPERTIES = [
     GRAPHEME_CLUSTER_BREAK,
     UnicodeProperty("East_Asian_Width", "EastAsianWidth.txt", "Neutral"),
     UnicodeProperty("Emoji", "emoji/emoji-data.txt", "No", True),
+    UnicodeProperty("Emoji_Presentation", "emoji/emoji-data.txt", "No", True),
+    UnicodeProperty("Regional_Indicator", "PropList.txt", "No", True),
     UnicodeProperty("Name", "extracted/DerivedName.txt"),
 ]
 
@@ -291,7 +293,7 @@ def gen_name_header(path: str, property: UnicodeProperty):
 
         for value in property.values_table:
             cat = GENERAL_CATEGORY.lookup_code_point(value.range().start)
-            if "Format" in cat or "Separator" in cat:
+            if "Format" in cat or "Separator" in cat or "Variation" in value.property:
                 file.write(
                     f"constexpr inline auto {value.property} = c32({hex(value.range().start)});\n",
                 )
