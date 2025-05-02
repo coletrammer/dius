@@ -78,6 +78,13 @@ auto SyncFile::enter_raw_mode() -> di::Expected<RawModeToken, di::GenericCode> {
     }));
 }
 
+auto SyncFile::get_termios_restorer() -> di::Expected<di::Function<void()>, di::GenericCode> {
+    auto original = TRY(syscalls::sys_tcgetattr(file_descriptor()));
+    return di::make_function<void()>([fd = file_descriptor(), original] {
+        (void) syscalls::sys_tcsetattr(fd, original);
+    });
+}
+
 auto open_sync(di::PathView path, OpenMode open_mode, u16 create_mode, OpenFlags open_flags)
     -> di::Expected<SyncFile, di::GenericCode> {
     auto flags = detail::open_mode_flags(open_mode, open_flags);

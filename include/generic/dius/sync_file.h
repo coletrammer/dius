@@ -101,6 +101,8 @@ public:
     using RawModeToken = di::ScopeExit<di::Function<void()>>;
     auto enter_raw_mode() -> di::Expected<RawModeToken, di::GenericCode>;
 
+    auto get_termios_restorer() -> di::Expected<di::Function<void()>, di::GenericCode>;
+
 private:
     Owned m_owned { Owned::No };
     int m_fd { -1 };
