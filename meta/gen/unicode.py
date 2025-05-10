@@ -121,6 +121,7 @@ UNICODE_PROPERTIES = [
     UnicodeProperty("Emoji", "emoji/emoji-data.txt", "No", True),
     UnicodeProperty("Emoji_Presentation", "emoji/emoji-data.txt", "No", True),
     UnicodeProperty("Regional_Indicator", "PropList.txt", "No", True),
+    UnicodeProperty("Default_Ignorable_Code_Point", "DerivedCoreProperties.txt", "No", True),
     UnicodeProperty("Name", "extracted/DerivedName.txt"),
 ]
 
@@ -470,6 +471,13 @@ def main():
             input_path(prop.input_file),
             prop,
         )
+
+        if prop.name == "General_Category":
+            prop.values_map["invalid"]  = "Invalid"
+            prop.values_table.append(UnicodePropertyRange([CodePointRange(0xfdd0, 0xfdef+1)], "Invalid"))
+            for s in range(0xfffe, 0x10fffe, 0x10000):
+                prop.values_table.append(UnicodePropertyRange([CodePointRange(s, s+2)], "Invalid"))
+
         # Sort by range start, so we can use binary search for the lookup
         prop.values_table.sort(key=lambda x: x.sequence[0].start)
 

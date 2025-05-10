@@ -1,5 +1,6 @@
 #include "dius/unicode/width.h"
 
+#include "dius/unicode/default_ignorable_code_point.h"
 #include "dius/unicode/east_asian_width.h"
 #include "dius/unicode/emoji.h"
 #include "dius/unicode/emoji_presentation.h"
@@ -22,7 +23,7 @@ auto code_point_width(c32 code_point) -> di::Optional<u8> {
 
     // Control characters, surrogates, and non-codepoints are not considered valid.
     if (category == GeneralCategory::Control || category == GeneralCategory::Surrogate ||
-        category == GeneralCategory::Unassigned) {
+        category == GeneralCategory::Invalid) {
         return {};
     }
 
@@ -38,6 +39,12 @@ auto code_point_width(c32 code_point) -> di::Optional<u8> {
             return 2;
         default:
             break;
+    }
+
+    // Default ignorable code points have width 0. This must be checked after
+    // east-asian width to not give certain characters like U+115f width 0.
+    if (default_ignorable_code_point(code_point) == DefaultIgnorableCodePoint::Yes) {
+        return 0;
     }
 
     // Emoji case: Emojis which are presented as emoji by default have width 2. Non-default
@@ -63,12 +70,15 @@ auto grapheme_cluster_width(di::StringView grapheme_cluster) -> u8 {
                 auto lookahead = *it;
                 switch (lookahead) {
                     // Requests a text presentation of an emoji character
-                    case VariationSelector_15:
-                        if (emoji_presentation(code_point) == EmojiPresentation::Yes &&
-                            regional_indicator(code_point) == RegionalIndicator::No) {
-                            return 1;
-                        }
-                        break;
+                    // For now, we'll ignore variation selector 15, but in the future
+                    // we can enable handling of it. This will depend on the adoption
+                    // by terminals.
+                    // case VariationSelector_15:
+                    //     if (emoji_presentation(code_point) == EmojiPresentation::Yes &&
+                    //         regional_indicator(code_point) == RegionalIndicator::No) {
+                    //         return 1;
+                    //     }
+                    //     break;
                     // Requests an emoji presentation for a text character
                     case VariationSelector_16:
                         if (emoji(code_point) == Emoji::Yes) {
