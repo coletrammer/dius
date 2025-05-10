@@ -38,6 +38,7 @@ enum class GeneralCategory {
     LineSeparator,
     ParagraphSeparator,
     SpaceSeparator,
+    Invalid,
 };
 
 constexpr auto tag_invoke(di::Tag<di::reflect>, di::InPlaceType<GeneralCategory>) {
@@ -58,7 +59,7 @@ constexpr auto tag_invoke(di::Tag<di::reflect>, di::InPlaceType<GeneralCategory>
         di::enumerator<"CurrencySymbol", CurrencySymbol>, di::enumerator<"ModifierSymbol", ModifierSymbol>,
         di::enumerator<"MathSymbol", MathSymbol>, di::enumerator<"OtherSymbol", OtherSymbol>,
         di::enumerator<"LineSeparator", LineSeparator>, di::enumerator<"ParagraphSeparator", ParagraphSeparator>,
-        di::enumerator<"SpaceSeparator", SpaceSeparator>);
+        di::enumerator<"SpaceSeparator", SpaceSeparator>, di::enumerator<"Invalid", Invalid>);
 }
 
 constexpr auto category_other(GeneralCategory category) -> bool {

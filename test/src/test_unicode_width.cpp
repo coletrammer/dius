@@ -27,6 +27,8 @@ static void code_point_width() {
         Case(0x300, 0),                          // Non spacing mark
         Case(0x61c, 0),                          // Format general category
         Case(0x1f3fb, 2),                        // Emoji skin tone modifier (this is marked as east-asian wide...)
+        Case(U'͸', 1),                          // Unassigned but valid character defaults to width 1
+        Case(U'\u1160', 0),                      // Default ignorable code points have width 0, even if not a mark
     };
 
     for (auto [input, expected] : cases) {

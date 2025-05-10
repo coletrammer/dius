@@ -1,5 +1,6 @@
 #include "dius/unicode/width.h"
 
+#include "dius/unicode/default_ignorable_code_point.h"
 #include "dius/unicode/east_asian_width.h"
 #include "dius/unicode/emoji.h"
 #include "dius/unicode/emoji_presentation.h"
@@ -22,12 +23,17 @@ auto code_point_width(c32 code_point) -> di::Optional<u8> {
 
     // Control characters, surrogates, and non-codepoints are not considered valid.
     if (category == GeneralCategory::Control || category == GeneralCategory::Surrogate ||
-        category == GeneralCategory::Unassigned) {
+        category == GeneralCategory::Invalid) {
         return {};
     }
 
     // Marks and format characters have width 0.
     if (category_mark(category) || category == GeneralCategory::Format) {
+        return 0;
+    }
+
+    // Default ignorable code points have width 0.
+    if (default_ignorable_code_point(code_point) == DefaultIgnorableCodePoint::Yes) {
         return 0;
     }
 
