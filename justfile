@@ -3,6 +3,7 @@ preset := env("PRESET", "dev")
 alias c := configure
 alias b := build
 alias t := test
+alias g := generate
 alias cb := configure_build
 alias bt := build_test
 alias cbt := configure_build_test
@@ -32,6 +33,10 @@ test *args="": ensure_configured
     )
 
     $build_directory/test/dius_test {{ args }}
+
+# Generate code
+generate:
+    ./meta/gen/unicode.py
 
 # Simulate base CI
 ci:
