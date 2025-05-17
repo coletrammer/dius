@@ -53,7 +53,7 @@ enum class GraphemeClusterState : u8 {
     GroundConsume,
 };
 
-constexpr static auto pending_postcore(GraphemeClusterBreak b) -> GraphemeClusterState {
+consteval static auto pending_postcore(GraphemeClusterBreak b) -> GraphemeClusterState {
     using enum GraphemeClusterBreak;
     // postcore := [Extend ZWJ SpacingMark]
     switch (b) {
@@ -68,7 +68,7 @@ constexpr static auto pending_postcore(GraphemeClusterBreak b) -> GraphemeCluste
     }
 }
 
-constexpr static auto pending_indic_linker(GraphemeClusterBreak b) -> GraphemeClusterState {
+consteval static auto pending_indic_linker(GraphemeClusterBreak b) -> GraphemeClusterState {
     using enum GraphemeClusterBreak;
     // This state means we're expected InCB=Linker before we can get a consonant.
     // conjunctCluster := \p{InCB=Consonant} ([\p{InCB=Extend} \p{InCB=Linker}]* \p{InCB=Linker} [\p{InCB=Extend}
@@ -89,7 +89,7 @@ constexpr static auto pending_indic_linker(GraphemeClusterBreak b) -> GraphemeCl
     di::unreachable();
 }
 
-constexpr static auto pending_indic_consonant(GraphemeClusterBreak b) -> GraphemeClusterState {
+consteval static auto pending_indic_consonant(GraphemeClusterBreak b) -> GraphemeClusterState {
     using enum GraphemeClusterBreak;
     // This state means we're expected a InCB=Consonant
     // conjunctCluster := \p{InCB=Consonant} ([\p{InCB=Extend} \p{InCB=Linker}]* \p{InCB=Linker} [\p{InCB=Extend}
@@ -111,7 +111,7 @@ constexpr static auto pending_indic_consonant(GraphemeClusterBreak b) -> Graphem
     di::unreachable();
 }
 
-constexpr static auto pending_hangul_v(GraphemeClusterBreak b) -> GraphemeClusterState {
+consteval static auto pending_hangul_v(GraphemeClusterBreak b) -> GraphemeClusterState {
     using enum GraphemeClusterBreak;
     // This state matches the part of the sequence once a V has occurred.
     // L* (V+ | LV V* | LVT) T*
@@ -130,7 +130,7 @@ constexpr static auto pending_hangul_v(GraphemeClusterBreak b) -> GraphemeCluste
     di::unreachable();
 }
 
-constexpr static auto pending_hangul_t(GraphemeClusterBreak b) -> GraphemeClusterState {
+consteval static auto pending_hangul_t(GraphemeClusterBreak b) -> GraphemeClusterState {
     using enum GraphemeClusterBreak;
     // This state matches the part of the sequence once a T has occurred.
     // L* (V+ | LV V* | LVT) T*
@@ -145,7 +145,7 @@ constexpr static auto pending_hangul_t(GraphemeClusterBreak b) -> GraphemeCluste
     di::unreachable();
 }
 
-constexpr static auto pending_hangul_l(GraphemeClusterBreak b) -> GraphemeClusterState {
+consteval static auto pending_hangul_l(GraphemeClusterBreak b) -> GraphemeClusterState {
     using enum GraphemeClusterBreak;
     // This state matches the part of the sequence once an L has occurred
     // L* (V+ | LV V* | LVT) T* | L+
@@ -167,7 +167,7 @@ constexpr static auto pending_hangul_l(GraphemeClusterBreak b) -> GraphemeCluste
     di::unreachable();
 }
 
-constexpr static auto pending_pictographic(GraphemeClusterBreak b) -> GraphemeClusterState {
+consteval static auto pending_pictographic(GraphemeClusterBreak b) -> GraphemeClusterState {
     using enum GraphemeClusterBreak;
     // This state matches the end of this sequence.
     // (Extend* ZWJ \p{Extended_Pictographic})*
@@ -184,7 +184,7 @@ constexpr static auto pending_pictographic(GraphemeClusterBreak b) -> GraphemeCl
     di::unreachable();
 }
 
-constexpr static auto pending_zwj_pictographic(GraphemeClusterBreak b) -> GraphemeClusterState {
+consteval static auto pending_zwj_pictographic(GraphemeClusterBreak b) -> GraphemeClusterState {
     using enum GraphemeClusterBreak;
     // This state matches the beginning of this sequence.
     // (Extend* ZWJ \p{Extended_Pictographic})*
@@ -205,7 +205,7 @@ constexpr static auto pending_zwj_pictographic(GraphemeClusterBreak b) -> Graphe
     di::unreachable();
 }
 
-constexpr static auto pending_regional_indicator(GraphemeClusterBreak b) -> GraphemeClusterState {
+consteval static auto pending_regional_indicator(GraphemeClusterBreak b) -> GraphemeClusterState {
     using enum GraphemeClusterBreak;
     // RI-Sequence := RI RI
     switch (b) {
@@ -219,7 +219,7 @@ constexpr static auto pending_regional_indicator(GraphemeClusterBreak b) -> Grap
     di::unreachable();
 }
 
-constexpr static auto pending_precore(GraphemeClusterBreak b) -> GraphemeClusterState {
+consteval static auto pending_precore(GraphemeClusterBreak b) -> GraphemeClusterState {
     // precore := Prepend
     using enum GraphemeClusterBreak;
     switch (b) {
@@ -262,7 +262,7 @@ constexpr static auto pending_precore(GraphemeClusterBreak b) -> GraphemeCluster
     di::unreachable();
 }
 
-constexpr static auto pending_crlf(GraphemeClusterBreak b) -> GraphemeClusterState {
+consteval static auto pending_crlf(GraphemeClusterBreak b) -> GraphemeClusterState {
     using enum GraphemeClusterBreak;
     // CR LF
     switch (b) {
@@ -275,7 +275,7 @@ constexpr static auto pending_crlf(GraphemeClusterBreak b) -> GraphemeClusterSta
 }
 
 // crlf | Control | precore* core postcore*
-constexpr static auto ground(GraphemeClusterBreak b) -> GraphemeClusterState {
+consteval static auto ground(GraphemeClusterBreak b) -> GraphemeClusterState {
     using enum GraphemeClusterBreak;
     switch (b) {
         // Control
@@ -292,7 +292,7 @@ constexpr static auto ground(GraphemeClusterBreak b) -> GraphemeClusterState {
     di::unreachable();
 }
 
-constexpr static auto invoke_state(GraphemeClusterState current, GraphemeClusterBreak b) -> GraphemeClusterState {
+consteval static auto invoke_state(GraphemeClusterState current, GraphemeClusterBreak b) -> GraphemeClusterState {
     using enum GraphemeClusterState;
     switch (current) {
         case Ground:
@@ -329,10 +329,21 @@ constexpr static auto invoke_state(GraphemeClusterState current, GraphemeCluster
 constexpr static auto state_count = usize(GraphemeClusterState::StateCount);
 constexpr static auto cluster_break_count = usize(di::meta::TupleSize<di::Reflect<GraphemeClusterBreak>>);
 
-constexpr static auto construct_state_lookup_table() {
-    auto result = di::Array<di::Array<GraphemeClusterState, cluster_break_count>, state_count> {};
+consteval static auto construct_state_lookup_table() {
+    auto result = di::Array<di::Array<u8, cluster_break_count>, state_count> {};
     for (auto [s, b] : di::cartesian_product(di::range(state_count), di::range(cluster_break_count))) {
-        result[s][b] = invoke_state(GraphemeClusterState(s), GraphemeClusterBreak(b));
+        auto was_ground = s == u8(GraphemeClusterState::Ground);
+        auto next_state = invoke_state(GraphemeClusterState(s), GraphemeClusterBreak(b));
+        if (next_state == GraphemeClusterState::Ground) {
+            // When exiting directly to the ground state, we need to perform another lookup.
+            next_state = invoke_state(next_state, GraphemeClusterBreak(b));
+            was_ground = true;
+        }
+        if (next_state == GraphemeClusterState::GroundConsume) {
+            next_state = GraphemeClusterState::Ground;
+        }
+        // Include the next state and whether or not there should be a break.
+        result[s][b] = u8(next_state) | (was_ground ? 0x80 : 0);
     }
     return result;
 }
@@ -358,19 +369,10 @@ constexpr static auto lookup_break(c32 code_point) -> GraphemeClusterBreak {
 }
 
 auto GraphemeClusterer::is_boundary(c32 code_point) -> bool {
-    auto was_ground = m_state == u8(GraphemeClusterState::Ground);
     auto b = lookup_break(code_point);
-    auto next_state = lookup_table[m_state][u8(b)];
-    if (next_state == GraphemeClusterState::Ground) {
-        // When exiting directly to the ground state, we need to perform another lookup.
-        next_state = lookup_table[u8(next_state)][u8(b)];
-        was_ground = true;
-    }
-    if (next_state == GraphemeClusterState::GroundConsume) {
-        next_state = GraphemeClusterState::Ground;
-    }
-
-    m_state = u8(next_state);
-    return was_ground;
+    m_state = lookup_table[m_state][u8(b)];
+    auto is_break = !!(m_state & 0x80);
+    m_state &= ~0x80;
+    return is_break;
 };
 }
