@@ -1,0 +1,27 @@
+var searchData=
+[
+  ['l_0',['L',['../namespacedius_1_1unicode.html#a0e33012fdc2ca34c4b2e11fd1e68640fad20caec3b48a1eef164cb4ca81ba2587',1,'dius::unicode']]],
+  ['languagetag_1',['LanguageTag',['../namespacedius_1_1unicode.html#ae8bf899317cd230d98b0a6e6b763723a',1,'dius::unicode']]],
+  ['leak_5ffile_5fdescriptor_2',['leak_file_descriptor',['../classdius_1_1SyncFile.html#a9c868b3de09f22054a646843992a821d',1,'dius::SyncFile']]],
+  ['left_5fto_5frightembedding_3',['Left_To_RightEmbedding',['../namespacedius_1_1unicode.html#a303941616f6daf8c0d42e4f5be2d5c1c',1,'dius::unicode']]],
+  ['left_5fto_5frightisolate_4',['Left_To_RightIsolate',['../namespacedius_1_1unicode.html#a1f1105ed30921392773406f6e457f3dd',1,'dius::unicode']]],
+  ['left_5fto_5frightmark_5',['Left_To_RightMark',['../namespacedius_1_1unicode.html#ab4d86f9bca0237485aa74d81188cd475',1,'dius::unicode']]],
+  ['left_5fto_5frightoverride_6',['Left_To_RightOverride',['../namespacedius_1_1unicode.html#a0ee39ad0b3535dc97d8f26add236483d',1,'dius::unicode']]],
+  ['letternumber_7',['LetterNumber',['../namespacedius_1_1unicode.html#af8e617c6a25f3942389b7491d7d44c35a42369054abce1b9d6964df08e51dc20a',1,'dius::unicode']]],
+  ['lf_8',['LF',['../namespacedius_1_1unicode.html#a0e33012fdc2ca34c4b2e11fd1e68640fa618441d41cce47dbcfd9bed6e5ff64e6',1,'dius::unicode']]],
+  ['library_9',['Library',['../md_docs_2pages_2developing.html#autotoc_md30',1,'di Library'],['../index.html',1,'dius Library']]],
+  ['library_20documentation_10',['Dius Library Documentation',['../md_docs_2pages_2table__of__contents.html',1,'']]],
+  ['lineseparator_11',['LineSeparator',['../namespacedius_1_1unicode.html#a390031a9ee2eec7b4d3d1ba9c08ebdec',1,'dius::unicode::LineSeparator'],['../namespacedius_1_1unicode.html#af8e617c6a25f3942389b7491d7d44c35ad155e6769dc59055b802565ef5fd5996',1,'dius::unicode::LineSeparator']]],
+  ['linux_20startup_12',['Linux Startup',['../md_docs_2pages_2linux__startup.html',1,'md_docs_2pages_2architecture__docs']]],
+  ['linux_5fstartup_2emd_13',['linux_startup.md',['../linux__startup_8md.html',1,'']]],
+  ['list_14',['list',['../structdius_1_1runtime_1_1detail_1_1FreeList.html#a348cef7e4a291957e71eb2df0ae0ed06',1,'dius::runtime::detail::FreeList']]],
+  ['listen_15',['listen',['../namespacedius_1_1system.html#a67c5940f7777d292fbf291d33b84b033a839d7228b5ccc60e54455093a966b8c2',1,'dius::system']]],
+  ['listensender_16',['ListenSender',['../structdius_1_1linux_1_1ListenSender.html',1,'dius::linux']]],
+  ['local_20storage_17',['Setup Thread-Local Storage',['../md_docs_2pages_2linux__startup.html#autotoc_md35',1,'']]],
+  ['lock_18',['lock',['../classdius_1_1Mutex.html#afd722f0bb134485358d053ce019ff1d0',1,'dius::Mutex']]],
+  ['lookupproperty_19',['LookupProperty',['../structdius_1_1unicode_1_1detail_1_1LookupProperty.html',1,'dius::unicode::detail']]],
+  ['lowercaseletter_20',['LowercaseLetter',['../namespacedius_1_1unicode.html#af8e617c6a25f3942389b7491d7d44c35a12face25dc04d4eeb2778f2d770faa15',1,'dius::unicode']]],
+  ['lseek_21',['lseek',['../namespacedius_1_1system.html#a67c5940f7777d292fbf291d33b84b033ad925e6d112619bfd74fc43acf66da0e5',1,'dius::system']]],
+  ['lv_22',['LV',['../namespacedius_1_1unicode.html#a0e33012fdc2ca34c4b2e11fd1e68640faa7bdee32cb21f0abbf9f878cb06cfe16',1,'dius::unicode']]],
+  ['lvt_23',['LVT',['../namespacedius_1_1unicode.html#a0e33012fdc2ca34c4b2e11fd1e68640fabac6295fe703ef74561f7a4f6b429e09',1,'dius::unicode']]]
+];
