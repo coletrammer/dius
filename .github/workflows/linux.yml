@@ -17,7 +17,7 @@ jobs:
         preset: [ci-coverage, ci-sanitize, ci-ubuntu-clang, ci-ubuntu-dius-runtime]
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Install nix
         uses: cachix/install-nix-action@v30
         with:
