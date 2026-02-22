@@ -52,4 +52,8 @@ auto read_to_string(di::PathView path) -> di::Result<di::String> {
     auto file = TRY(open_sync(path, OpenMode::Readonly));
     return di::read_to_string(file);
 }
+
+auto SyncFile::interactive_device() const -> bool {
+    return get_tty_window_size().has_value();
+}
 }

@@ -92,10 +92,10 @@ public:
 
     auto flush() const -> di::Expected<void, di::GenericCode> { return {}; }
 
-    auto interactive_device() const -> bool { return true; }
+    auto interactive_device() const -> bool;
 
     auto set_tty_window_size(tty::WindowSize size) -> di::Expected<void, di::GenericCode>;
-    auto get_tty_window_size() -> di::Expected<tty::WindowSize, di::GenericCode>;
+    auto get_tty_window_size() const -> di::Expected<tty::WindowSize, di::GenericCode>;
     auto get_psuedo_terminal_path() -> di::Expected<di::Path, di::GenericCode>;
 
     using RawModeToken = di::ScopeExit<di::Function<void()>>;
