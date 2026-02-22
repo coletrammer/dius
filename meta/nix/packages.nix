@@ -26,12 +26,14 @@
 
       dius = mkPackage pkgs.stdenv "dius" [ ];
       dius-runtime = mkPackage pkgs.stdenv "dius-runtime" [ "-Ddius_USE_RUNTIME=ON" ];
+      dius-static = mkPackage pkgs.pkgsStatic.stdenv "dius-static" [ ];
     in
     {
       packages = {
         default = dius;
         dius = dius;
         dius-runtime = dius-runtime;
+        dius-static = dius-static;
       };
     };
 }

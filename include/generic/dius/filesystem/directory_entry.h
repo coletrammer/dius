@@ -129,7 +129,7 @@ private:
     template<di::concepts::Encoding Enc>
     constexpr friend auto tag_invoke(di::Tag<di::formatter_in_place>, di::InPlaceType<DirectoryEntry>,
                                      di::FormatParseContext<Enc>& context) {
-        return di::format::formatter<di::PathView, Enc>(context) % [](di::concepts::CopyConstructible auto formatter) {
+        return di::fmt::formatter<di::PathView, Enc>(context) % [](di::concepts::CopyConstructible auto formatter) {
             return [=](di::FormatContext auto& context, DirectoryEntry const& a) {
                 return formatter(context, a.path_view());
             };

@@ -26,6 +26,7 @@ jobs:
         run: |
           nix build .#dius
           nix build .#dius-runtime
+          nix build .#dius-static
       - name: Run clang-tidy
         run: |
           nix develop --command just preset=ci-ubuntu-clang check_tidy
