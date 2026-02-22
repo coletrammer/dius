@@ -52,7 +52,7 @@ auto SyncFile::set_tty_window_size(tty::WindowSize size) -> di::Expected<void, d
     return syscalls::sys_ioctl(file_descriptor(), TIOCSWINSZ, &ws);
 }
 
-auto SyncFile::get_tty_window_size() -> di::Expected<tty::WindowSize, di::GenericCode> {
+auto SyncFile::get_tty_window_size() const -> di::Expected<tty::WindowSize, di::GenericCode> {
     ::winsize ws {};
     TRY(syscalls::sys_ioctl(file_descriptor(), TIOCGWINSZ, &ws));
     return tty::WindowSize { ws.ws_row, ws.ws_col, ws.ws_xpixel, ws.ws_ypixel };
