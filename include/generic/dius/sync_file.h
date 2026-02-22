@@ -134,7 +134,7 @@ auto open_psuedo_terminal_controller(OpenMode open_mode) -> di::Expected<SyncFil
 auto open_tempory_file() -> di::Expected<SyncFile, di::GenericCode>;
 auto read_to_string(di::PathView path) -> di::Result<di::String>;
 
-inline auto stdin = SyncFile { SyncFile::Owned::No, 0 };
-inline auto stdout = SyncFile { SyncFile::Owned::No, 1 };
-inline auto stderr = SyncFile { SyncFile::Owned::No, 2 };
+inline auto std_in = SyncFile { SyncFile::Owned::No, 0 };
+inline auto std_out = SyncFile { SyncFile::Owned::No, 1 };
+inline auto std_err = SyncFile { SyncFile::Owned::No, 2 };
 }

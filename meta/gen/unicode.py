@@ -255,7 +255,7 @@ def gen_grapheme_break_test_data(path: str, data: List[List[Tuple[int, bool]]]):
             "    auto operator==(GraphemeBreakTestCodePoint const&) const -> bool = default;\n"
             "\n"
             "    auto to_string() const {\n"
-            "        return *di::present(\"{} {:04X} \"_sv, is_break ? U'÷' : U'×', code_point);\n"
+            "        return di::format(\"{} {:04X} \"_sv, is_break ? U'÷' : U'×', code_point);\n"
             "    }\n"
             "};\n"
             "\n"

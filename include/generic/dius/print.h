@@ -8,33 +8,37 @@ namespace dius {
 namespace detail {
     struct PrintFunction {
         template<typename... Args>
-        static void operator()(di::format::FormatStringImpl<di::container::string::Utf8Encoding, Args...> format_string,
+        static void operator()(di::fmt::FormatStringImpl<di::container::string::Utf8Encoding, Args...> format_string,
                                Args&&... args) {
-            (void) di::writer_print<di::container::string::Utf8Encoding>(dius::stdout, format_string, args...);
+            (void) di::writer_print<di::container::string::Utf8Encoding>(dius::std_out, format_string,
+                                                                         di::forward<Args>(args)...);
         }
     };
 
     struct PrintlnFunction {
         template<typename... Args>
-        static void operator()(di::format::FormatStringImpl<di::container::string::Utf8Encoding, Args...> format_string,
+        static void operator()(di::fmt::FormatStringImpl<di::container::string::Utf8Encoding, Args...> format_string,
                                Args&&... args) {
-            (void) di::writer_println<di::container::string::Utf8Encoding>(dius::stdout, format_string, args...);
+            (void) di::writer_println<di::container::string::Utf8Encoding>(dius::std_out, format_string,
+                                                                           di::forward<Args>(args)...);
         }
     };
 
     struct EPrintFunction {
         template<typename... Args>
-        static void operator()(di::format::FormatStringImpl<di::container::string::Utf8Encoding, Args...> format_string,
+        static void operator()(di::fmt::FormatStringImpl<di::container::string::Utf8Encoding, Args...> format_string,
                                Args&&... args) {
-            (void) di::writer_print<di::container::string::Utf8Encoding>(dius::stderr, format_string, args...);
+            (void) di::writer_print<di::container::string::Utf8Encoding>(dius::std_err, format_string,
+                                                                         di::forward<Args>(args)...);
         }
     };
 
     struct EPrintlnFunction {
         template<typename... Args>
-        static void operator()(di::format::FormatStringImpl<di::container::string::Utf8Encoding, Args...> format_string,
+        static void operator()(di::fmt::FormatStringImpl<di::container::string::Utf8Encoding, Args...> format_string,
                                Args&&... args) {
-            (void) di::writer_println<di::container::string::Utf8Encoding>(dius::stderr, format_string, args...);
+            (void) di::writer_println<di::container::string::Utf8Encoding>(dius::std_err, format_string,
+                                                                           di::forward<Args>(args)...);
         }
     };
 }
