@@ -1,0 +1,26 @@
+var searchData=
+[
+  ['openat_0',['openat',['../namespacedius_1_1system.html#a67c5940f7777d292fbf291d33b84b033aea2faa31ba91763ea134e0d993cf7158',1,'dius::system']]],
+  ['openpunctuation_1',['OpenPunctuation',['../namespacedius_1_1unicode.html#af8e617c6a25f3942389b7491d7d44c35a9278ed37c7f00ffd0bb1df604ea59d22',1,'dius::unicode']]],
+  ['operationcanceled_2',['OperationCanceled',['../namespacedius_1_1posix__error.html#a95c09a3e904d600324fb31b44bd151b0ad7e4c0f10d91f53b1e382803190e7e08',1,'dius::posix_error']]],
+  ['operationinprogress_3',['OperationInProgress',['../namespacedius_1_1posix__error.html#a95c09a3e904d600324fb31b44bd151b0a9f3c82b9ecb292c7728cacd1d29aba31',1,'dius::posix_error']]],
+  ['operationnotpermitted_4',['OperationNotPermitted',['../namespacedius_1_1posix__error.html#a95c09a3e904d600324fb31b44bd151b0a4696a9050a048e165d8391be29db7ef6',1,'dius::posix_error']]],
+  ['operationnotsupported_5',['OperationNotSupported',['../namespacedius_1_1posix__error.html#a95c09a3e904d600324fb31b44bd151b0ad33cd6bd60ba089d4551762e5fc0b640',1,'dius::posix_error']]],
+  ['operationwouldblock_6',['OperationWouldBlock',['../namespacedius_1_1posix__error.html#a95c09a3e904d600324fb31b44bd151b0aece0a2757e33cafa95cf15fac51d85d5',1,'dius::posix_error']]],
+  ['other_7',['Other',['../namespacedius_1_1unicode.html#a0e33012fdc2ca34c4b2e11fd1e68640fa6311ae17c1ee52b36e68aaf4ad066387',1,'dius::unicode']]],
+  ['other_5fextendedpictographic_8',['Other_ExtendedPictographic',['../namespacedius_1_1unicode.html#a0e33012fdc2ca34c4b2e11fd1e68640fa98d0c4d9c99e4d183b203d6f42ba37ff',1,'dius::unicode']]],
+  ['other_5findicconjunctbreak_5fconsonant_9',['Other_IndicConjunctBreak_Consonant',['../namespacedius_1_1unicode.html#a0e33012fdc2ca34c4b2e11fd1e68640fabfb49110dacdfeaaa1f99f761574999a',1,'dius::unicode']]],
+  ['otherletter_10',['OtherLetter',['../namespacedius_1_1unicode.html#af8e617c6a25f3942389b7491d7d44c35a681a32d2498d80cc39bf6ebceb5e391c',1,'dius::unicode']]],
+  ['othernumber_11',['OtherNumber',['../namespacedius_1_1unicode.html#af8e617c6a25f3942389b7491d7d44c35a74b756a83a5e346c58cc1c08f50ff5cf',1,'dius::unicode']]],
+  ['otherpunctuation_12',['OtherPunctuation',['../namespacedius_1_1unicode.html#af8e617c6a25f3942389b7491d7d44c35a336916896c8b0222ac24dd0cd0a7b784',1,'dius::unicode']]],
+  ['othersall_13',['OthersAll',['../namespacedius_1_1filesystem.html#ae8e91965cafc765fc2c9ea5c9caf1d0ea4bca015efeb19912af30cc079a5059b0',1,'dius::filesystem']]],
+  ['othersexec_14',['OthersExec',['../namespacedius_1_1filesystem.html#ae8e91965cafc765fc2c9ea5c9caf1d0ea85dcc37f79e84fca81ec69e7bacd99ac',1,'dius::filesystem']]],
+  ['othersread_15',['OthersRead',['../namespacedius_1_1filesystem.html#ae8e91965cafc765fc2c9ea5c9caf1d0eaa6b8875adc9bbf9f22187f7cd19fcb48',1,'dius::filesystem']]],
+  ['otherswrite_16',['OthersWrite',['../namespacedius_1_1filesystem.html#ae8e91965cafc765fc2c9ea5c9caf1d0eae8b0f5b962a3aa0cbf74dad9de9a4529',1,'dius::filesystem']]],
+  ['othersymbol_17',['OtherSymbol',['../namespacedius_1_1unicode.html#af8e617c6a25f3942389b7491d7d44c35a698c43a5a66a5db0c134e9ab07a03e60',1,'dius::unicode']]],
+  ['ownerall_18',['OwnerAll',['../namespacedius_1_1filesystem.html#ae8e91965cafc765fc2c9ea5c9caf1d0ea6e68e7af62f7797decb7c2bd7afa27f2',1,'dius::filesystem']]],
+  ['ownerdead_19',['OwnerDead',['../namespacedius_1_1posix__error.html#a95c09a3e904d600324fb31b44bd151b0ab4afdf26da06853d6c5ee444f8b3e0a1',1,'dius::posix_error']]],
+  ['ownerexec_20',['OwnerExec',['../namespacedius_1_1filesystem.html#ae8e91965cafc765fc2c9ea5c9caf1d0eafb83602f44235b99c1e8ad5f7595fe28',1,'dius::filesystem']]],
+  ['ownerread_21',['OwnerRead',['../namespacedius_1_1filesystem.html#ae8e91965cafc765fc2c9ea5c9caf1d0ea4769e764b9ac1098610cbcd3d2589e8a',1,'dius::filesystem']]],
+  ['ownerwrite_22',['OwnerWrite',['../namespacedius_1_1filesystem.html#ae8e91965cafc765fc2c9ea5c9caf1d0ea1628ee826af587fffd0f75ef057e3fe6',1,'dius::filesystem']]]
+];

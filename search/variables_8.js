@@ -1,0 +1,24 @@
+var searchData=
+[
+  ['ideographicspace_0',['IdeographicSpace',['../namespacedius_1_1unicode.html#a4e5c9397f24993c9800f2fcd6af8a25b',1,'dius::unicode']]],
+  ['ideographicvariationindicator_1',['IdeographicVariationIndicator',['../namespacedius_1_1unicode.html#a51684dcaf03c6335a837678c8c431796',1,'dius::unicode']]],
+  ['inhibitarabicformshaping_2',['InhibitArabicFormShaping',['../namespacedius_1_1unicode.html#ad7e7106763bd55a4c34b05e87ee758e9',1,'dius::unicode']]],
+  ['inhibitsymmetricswapping_3',['InhibitSymmetricSwapping',['../namespacedius_1_1unicode.html#ad12860152ce01046c2e874aa5b194afe',1,'dius::unicode']]],
+  ['interlinearannotationanchor_4',['InterlinearAnnotationAnchor',['../namespacedius_1_1unicode.html#ac7e613eb9b13b79766b7cb10c9095ec0',1,'dius::unicode']]],
+  ['interlinearannotationseparator_5',['InterlinearAnnotationSeparator',['../namespacedius_1_1unicode.html#aa4197be230ad00effa421d6029c333f4',1,'dius::unicode']]],
+  ['interlinearannotationterminator_6',['InterlinearAnnotationTerminator',['../namespacedius_1_1unicode.html#ae34afdf29c2773cc24d340b777d3bbd2',1,'dius::unicode']]],
+  ['invisibleplus_7',['InvisiblePlus',['../namespacedius_1_1unicode.html#a94700a79384b831aa9d38e846ed23173',1,'dius::unicode']]],
+  ['invisibleseparator_8',['InvisibleSeparator',['../namespacedius_1_1unicode.html#a4a86885619af36d7bda1d1a843630f51',1,'dius::unicode']]],
+  ['invisibletimes_9',['InvisibleTimes',['../namespacedius_1_1unicode.html#ab6333c518be433b2f21ea496a7773045',1,'dius::unicode']]],
+  ['ipc_5fserver_10',['ipc_server',['../namespacedius.html#ace7a842d5db1ce5d65366c67d66486a9',1,'dius']]],
+  ['is_5fblock_5ffile_11',['is_block_file',['../namespacedius_1_1filesystem.html#a45abfe46c302ff5b0d694786e96aeccd',1,'dius::filesystem']]],
+  ['is_5fcharacter_5ffile_12',['is_character_file',['../namespacedius_1_1filesystem.html#ab6aa9d799dfa5a00c1dfa9b636006b1b',1,'dius::filesystem']]],
+  ['is_5fdirectory_13',['is_directory',['../namespacedius_1_1filesystem.html#a3052e977d2877b57ebcea79095511fd5',1,'dius::filesystem']]],
+  ['is_5fempty_14',['is_empty',['../namespacedius_1_1filesystem.html#ab47c6e80fd95b636efc3b71e86769770',1,'dius::filesystem']]],
+  ['is_5ffifo_15',['is_fifo',['../namespacedius_1_1filesystem.html#ad6b266a26374f6600fe3bf8cd7006e3f',1,'dius::filesystem']]],
+  ['is_5fother_16',['is_other',['../namespacedius_1_1filesystem.html#a9b92fce5a19faecda03e290b0865ec5d',1,'dius::filesystem']]],
+  ['is_5fregular_5ffile_17',['is_regular_file',['../namespacedius_1_1filesystem.html#af2ebcf0f00aa5137dc384011897a5b84',1,'dius::filesystem']]],
+  ['is_5fsocket_18',['is_socket',['../namespacedius_1_1filesystem.html#a0c1aecfdc0486af501c6fcd5d258e58d',1,'dius::filesystem']]],
+  ['is_5fsteady_19',['is_steady',['../classdius_1_1SteadyClock.html#a717759a185171d8665516f5441842927',1,'dius::SteadyClock']]],
+  ['is_5fsymlink_20',['is_symlink',['../namespacedius_1_1filesystem.html#a328a241b79150b511fa0ee1364a39cc7',1,'dius::filesystem']]]
+];
