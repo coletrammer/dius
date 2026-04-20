@@ -58,7 +58,7 @@ void PlatformThreadDeleter::operator()(PlatformThread* thread) const {
     ::operator delete(storage, size, std::align_val_t(alignment));
 }
 
-auto Thread::do_start(di::Function<void()> entry) -> di::Result<Thread> {
+auto Thread::do_start(di::Function<void()> entry, di::Box<di::InPlaceStopSource> stop_source) -> di::Result<Thread> {
     auto platform_thread = TRY(PlatformThread::create(runtime::get_tls_info()));
     platform_thread->entry = di::move(entry);
 
@@ -72,7 +72,7 @@ auto Thread::do_start(di::Function<void()> entry) -> di::Result<Thread> {
 
     TRY(spawn_thread(*platform_thread));
 
-    return Thread(di::move(platform_thread));
+    return Thread(di::move(platform_thread), di::move(stop_source));
 }
 
 static auto futex_wait(int* futex, int expect) -> di::Result<void> {

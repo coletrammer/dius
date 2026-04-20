@@ -8,7 +8,7 @@
 #include "dius/steady_clock.h"
 
 namespace dius {
-auto Thread::do_start(di::Function<void()> entry) -> di::Result<Thread> {
+auto Thread::do_start(di::Function<void()> entry, di::Box<di::InPlaceStopSource> stop_source) -> di::Result<Thread> {
     auto platform = di::make_box<PlatformThread>();
     platform->entry = di::move(entry);
 
@@ -23,7 +23,7 @@ auto Thread::do_start(di::Function<void()> entry) -> di::Result<Thread> {
     if (result != 0) {
         return di::Unexpected(PosixError(-result));
     }
-    return Thread(di::move(platform));
+    return Thread(di::move(platform), di::move(stop_source));
 }
 
 auto PlatformThread::join() -> di::Result<void> {
