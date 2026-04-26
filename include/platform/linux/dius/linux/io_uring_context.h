@@ -14,6 +14,7 @@
 #include "di/execution/receiver/prelude.h"
 #include "di/execution/sequence/sequence_sender.h"
 #include "di/execution/types/completion_signuatures.h"
+#include "di/execution/util/resource_helper.h"
 #include "di/function/make_deferred.h"
 #include "di/function/prelude.h"
 #include "di/meta/operations.h"
@@ -618,7 +619,8 @@ private:
     }
 };
 
-class AsyncFile : di::Immovable {
+template<typename T = void>
+class AsyncFile : public di::execution::ResourceHelper<AsyncFile<T>, OpenSender, CloseSender> {
 public:
     explicit AsyncFile(IoUringContext* parent, di::Path path, OpenMode mode, u16 create_mode)
         : m_parent(parent), m_path(di::move(path)), m_mode(mode), m_create_mode(create_mode) {}
@@ -630,6 +632,10 @@ public:
 
     auto fd() const -> int { return m_fd; }
     void set_fd(int fd) { m_fd = fd; }
+
+    auto open() { return OpenSender(m_parent, *this); }
+    auto close() { return CloseSender(m_parent, fd()); }
+    auto get_env() const -> Env { return Env(m_parent); }
 
 private:
     friend auto tag_invoke(di::Tag<di::execution::async_read_some>, AsyncFile& self, di::Span<di::Byte> buffer,
@@ -655,14 +661,21 @@ public:
 
     auto base_fd() const -> int { return m_base_fd; }
 
+    auto open(IoUringContext* context, auto& self) { return AcceptSender(context, self); }
+
 private:
     int m_base_fd { -1 };
 };
 
-template<typename Base>
+class MakeSocket {
+public:
+    auto open(IoUringContext* context, auto& self) { return MakeSocketSender(context, self); }
+};
+
+template<typename Base, typename Open>
 class AsyncSocket
-    : public di::Immovable
-    , public Base {
+    : public Base
+    , public di::execution::ResourceHelper<AsyncSocket<Base, Open>, Open, CloseSender> {
 public:
     template<typename... Args>
     requires(di::concepts::ConstructibleFrom<Base, Args...>)
@@ -673,6 +686,11 @@ public:
 
     auto fd() const -> int { return m_fd; }
     void set_fd(int fd) { m_fd = fd; }
+
+    auto open() { return static_cast<Base&>(*this).open(m_parent, *this); }
+    auto close() { return CloseSender(m_parent, fd()); }
+
+    auto get_env() const -> Env { return Env(m_parent); }
 
 private:
     friend auto tag_invoke(di::Tag<di::execution::async_read_some>, AsyncSocket& self, di::Span<di::Byte> buffer,
@@ -702,7 +720,7 @@ private:
     }
 
     friend auto tag_invoke(di::Tag<di::execution::async_accept>, AsyncSocket& self) {
-        return di::make_deferred<AsyncSocket<AcceptSocket>>(self.m_parent, self.m_fd);
+        return di::make_deferred<AsyncSocket<AcceptSocket, AcceptSender>>(self.m_parent, self.m_fd);
     }
 
     IoUringContext* m_parent;
@@ -713,17 +731,17 @@ struct OpenSender {
 public:
     using is_sender = void;
 
-    using CompletionSignatures = di::CompletionSignatures<di::SetValue(di::ReferenceWrapper<AsyncFile>),
+    using CompletionSignatures = di::CompletionSignatures<di::SetValue(di::ReferenceWrapper<AsyncFile<>>),
                                                           di::SetError(di::Error), di::SetStopped()>;
 
     IoUringContext* parent;
-    di::ReferenceWrapper<AsyncFile> file;
+    di::ReferenceWrapper<AsyncFile<>> file;
 
 private:
     template<typename Rec>
     struct OperationStateT {
         struct Type : OperationStateBase {
-            explicit Type(IoUringContext* parent, di::ReferenceWrapper<AsyncFile> file, Rec&& receiver)
+            explicit Type(IoUringContext* parent, di::ReferenceWrapper<AsyncFile<>> file, Rec&& receiver)
                 : m_parent(parent), m_file(file), m_receiver(di::move(receiver)) {}
 
             void execute() override {
@@ -773,7 +791,7 @@ private:
             }
 
             IoUringContext* m_parent;
-            di::ReferenceWrapper<AsyncFile> m_file;
+            di::ReferenceWrapper<AsyncFile<>> m_file;
             [[no_unique_address]] Rec m_receiver;
         };
     };
@@ -795,7 +813,7 @@ struct MakeSocketSender {
 public:
     using is_sender = void;
 
-    using AsyncSocket = linux::AsyncSocket<di::Void>;
+    using AsyncSocket = linux::AsyncSocket<MakeSocket, MakeSocketSender>;
 
     using CompletionSignatures = di::CompletionSignatures<di::SetValue(di::ReferenceWrapper<AsyncSocket>),
                                                           di::SetError(di::Error), di::SetStopped()>;
@@ -860,7 +878,7 @@ struct AcceptSender {
 public:
     using is_sender = void;
 
-    using AsyncSocket = linux::AsyncSocket<AcceptSocket>;
+    using AsyncSocket = linux::AsyncSocket<AcceptSocket, AcceptSender>;
 
     using CompletionSignatures = di::CompletionSignatures<di::SetValue(di::ReferenceWrapper<AsyncSocket>),
                                                           di::SetError(di::Error), di::SetStopped()>;
@@ -1008,33 +1026,21 @@ private:
     }
 };
 
-inline auto tag_invoke(di::Tag<di::execution::run>, AsyncFile& self) {
-    return RunSender<AsyncFile, OpenSender> { self.parent(), self };
-}
-
-inline auto tag_invoke(di::Tag<di::execution::run>, AsyncSocket<di::Void>& self) {
-    return RunSender<AsyncSocket<di::Void>, MakeSocketSender> { self.parent(), self };
-}
-
-inline auto tag_invoke(di::Tag<di::execution::run>, AsyncSocket<AcceptSocket>& self) {
-    return RunSender<AsyncSocket<AcceptSocket>, AcceptSender> { self.parent(), self };
-}
-
 inline auto tag_invoke(di::Tag<di::execution::schedule>, IoUringScheduler const& self) -> ScheduleSender {
     return { self.parent };
 }
 
 inline auto tag_invoke(di::Tag<di::execution::async_open>, IoUringScheduler const& self, di::Path path, OpenMode mode,
                        u16 create_mode) {
-    return di::make_deferred<AsyncFile>(self.parent, di::move(path), mode, create_mode);
+    return di::make_deferred<AsyncFile<>>(self.parent, di::move(path), mode, create_mode);
 }
 
 inline auto tag_invoke(di::Tag<di::execution::async_open>, IoUringScheduler const& self, di::Path path, OpenMode mode) {
-    return di::make_deferred<AsyncFile>(self.parent, di::move(path), mode, 0666);
+    return di::make_deferred<AsyncFile<>>(self.parent, di::move(path), mode, 0666);
 }
 
 inline auto tag_invoke(di::Tag<di::execution::async_make_socket>, IoUringScheduler const& self) {
-    return di::make_deferred<AsyncSocket<di::Void>>(self.parent);
+    return di::make_deferred<AsyncSocket<MakeSocket, MakeSocketSender>>(self.parent);
 }
 
 inline auto IoUringContext::create() -> di::Result<IoUringContext> {
