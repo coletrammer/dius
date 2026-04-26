@@ -6,6 +6,7 @@
 #include "di/sync/dumb_spinlock.h"
 #include "di/vocab/error/result.h"
 #include "di/vocab/error/status_code_forward_declaration.h"
+#include "dius/condition_variable.h"
 #include "dius/error.h"
 #include "dius/mutex.h"
 
@@ -21,6 +22,7 @@ inline auto get_current_thread_id() -> ThreadId {
 }
 
 using DefaultLock = dius::Mutex;
+using DefaultConditionVariable = dius::ConditionVariable;
 using DefaultAllocator = container::InfallibleAllocator;
 using DefaultFallibleAllocator = container::FallibleAllocator;
 }

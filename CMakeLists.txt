@@ -53,7 +53,10 @@ target_compile_options(dius_dius PUBLIC "-Ulinux")
 
 # di is a public dependency, as our header files depend on it.
 target_link_libraries(dius_dius PUBLIC di::di)
-target_compile_definitions(dius_dius PUBLIC DI_CUSTOM_ASSERT_HANDLER DI_CUSTOM_PLATFORM=<dius/platform.h>)
+target_compile_definitions(
+    dius_dius PUBLIC DI_CUSTOM_ASSERT_HANDLER DI_CUSTOM_PLATFORM=<dius/platform.h>
+                     DI_CUSTOM_PLATFORM_THREAD=<dius/thread.h>
+)
 
 # When using GCC (and libstdc++), we need to link against stdc++exp for <backtrace> to work.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

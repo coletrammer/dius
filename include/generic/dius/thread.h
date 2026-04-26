@@ -112,3 +112,7 @@ private:
     di::Box<di::InPlaceStopSource> m_stop_source;
 };
 }
+
+namespace di::platform {
+using Thread = dius::Thread;
+}
