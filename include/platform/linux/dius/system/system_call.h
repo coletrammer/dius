@@ -35,6 +35,11 @@ enum class Number : int {
     mkdirat = __NR_mkdirat,
     bind = __NR_bind,
     listen = __NR_listen,
+    accept4 = __NR_accept4,
+    socket = __NR_socket,
+    connect = __NR_connect,
+    shutdown = __NR_shutdown,
+    getsoockopt = __NR_getsockopt,
     ioctl = __NR_ioctl,
     rt_sigprocmask = __NR_rt_sigprocmask,
     rt_sigtimedwait = __NR_rt_sigtimedwait,
@@ -50,6 +55,15 @@ enum class Number : int {
     rmdir = __NR_rmdir,
     unlink = __NR_unlink,
     uname = __NR_uname,
+    fcntl = __NR_fcntl,
+    epoll_create1 = __NR_epoll_create1,
+    epoll_ctl = __NR_epoll_ctl,
+    epoll_wait = __NR_epoll_wait,
+#ifdef __NR_epoll_pwait2
+#define DIUS_LINUX_PWAIT2
+    epoll_pwait2 = __NR_epoll_pwait2,
+#endif
+    eventfd2 = __NR_eventfd2,
 };
 
 using SystemCallArg = unsigned long;

@@ -212,4 +212,42 @@ auto sys_clock_nanosleep(int clock, int flags, timespec timespec) -> Result<::ti
     (void) system::system_call<i32>(system::Number::clock_nanosleep, clock, flags, &timespec, &rem);
     return rem;
 }
+
+auto sys_fcntl(int fd, int op, int arg) -> Result<i32> {
+    TRY(system::system_call<i32>(system::Number::fcntl, fd, op, arg));
+    return {};
+}
+
+auto sys_listen(int fd, i32 backlog) -> Result<> {
+    TRY(system::system_call<i32>(system::Number::listen, fd, backlog));
+    return {};
+}
+
+auto sys_bind(int fd, net::UnixAddress const& address) -> Result<> {
+    auto addr = sockaddr_un {};
+    addr.sun_family = AF_UNIX;
+    auto* end = di::copy(address.path(), addr.sun_path).out;
+    *end = '\0';
+    TRY(system::system_call<i32>(system::Number::bind, fd, &addr, sizeof(addr)));
+    return {};
+}
+
+auto sys_connect(int fd, net::UnixAddress const& address) -> Result<> {
+    auto addr = sockaddr_un {};
+    addr.sun_family = AF_UNIX;
+    auto* end = di::copy(address.path(), addr.sun_path).out;
+    *end = '\0';
+    TRY(system::system_call<i32>(system::Number::connect, fd, &addr, sizeof(addr)));
+    return {};
+}
+
+auto sys_shutdown(int fd, net::Shutdown mode) -> Result<> {
+    TRY(system::system_call<i32>(system::Number::shutdown, fd, di::to_underlying(mode)));
+    return {};
+}
+
+auto sys_getsockopt(int fd, int level, int optname, void* optval, socklen_t optlen) -> Result<> {
+    TRY(system::system_call<i32>(system::Number::getsoockopt, fd, level, optname, optval, optlen));
+    return {};
+}
 }

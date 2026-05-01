@@ -1,6 +1,7 @@
 #pragma once
 
 #include "di/format/prelude.h"
+#include "di/io/buffered_writer.h"
 #include "di/io/prelude.h"
 #include "dius/sync_file.h"
 
@@ -10,7 +11,8 @@ namespace detail {
         template<typename... Args>
         static void operator()(di::fmt::FormatStringImpl<di::container::string::Utf8Encoding, Args...> format_string,
                                Args&&... args) {
-            (void) di::writer_print<di::container::string::Utf8Encoding>(dius::std_out, format_string,
+            auto buffered_writer = di::BufferedWriter(di::c_<16384zu>, di::ref(dius::std_out));
+            (void) di::writer_print<di::container::string::Utf8Encoding>(buffered_writer, format_string,
                                                                          di::forward<Args>(args)...);
         }
     };
@@ -19,7 +21,8 @@ namespace detail {
         template<typename... Args>
         static void operator()(di::fmt::FormatStringImpl<di::container::string::Utf8Encoding, Args...> format_string,
                                Args&&... args) {
-            (void) di::writer_println<di::container::string::Utf8Encoding>(dius::std_out, format_string,
+            auto buffered_writer = di::BufferedWriter(di::c_<16384zu>, di::ref(dius::std_out));
+            (void) di::writer_println<di::container::string::Utf8Encoding>(buffered_writer, format_string,
                                                                            di::forward<Args>(args)...);
         }
     };
@@ -28,7 +31,8 @@ namespace detail {
         template<typename... Args>
         static void operator()(di::fmt::FormatStringImpl<di::container::string::Utf8Encoding, Args...> format_string,
                                Args&&... args) {
-            (void) di::writer_print<di::container::string::Utf8Encoding>(dius::std_err, format_string,
+            auto buffered_writer = di::BufferedWriter(di::c_<16384zu>, di::ref(dius::std_out));
+            (void) di::writer_print<di::container::string::Utf8Encoding>(buffered_writer, format_string,
                                                                          di::forward<Args>(args)...);
         }
     };
@@ -37,7 +41,8 @@ namespace detail {
         template<typename... Args>
         static void operator()(di::fmt::FormatStringImpl<di::container::string::Utf8Encoding, Args...> format_string,
                                Args&&... args) {
-            (void) di::writer_println<di::container::string::Utf8Encoding>(dius::std_err, format_string,
+            auto buffered_writer = di::BufferedWriter(di::c_<16384zu>, di::ref(dius::std_out));
+            (void) di::writer_println<di::container::string::Utf8Encoding>(buffered_writer, format_string,
                                                                            di::forward<Args>(args)...);
         }
     };

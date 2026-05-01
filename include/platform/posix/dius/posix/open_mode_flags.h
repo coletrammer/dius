@@ -12,6 +12,9 @@ inline auto open_mode_flags(OpenMode open_mode, OpenFlags flags) -> int {
     if (!!(flags & OpenFlags::KeepAfterExec)) {
         base &= ~O_CLOEXEC;
     }
+    if (!!(flags & OpenFlags::NonBlocking)) {
+        base |= O_NONBLOCK;
+    }
     switch (open_mode) {
         case OpenMode::Readonly:
             return base | O_RDONLY;

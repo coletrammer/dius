@@ -48,7 +48,7 @@ auto SyncFile::write_exactly(di::Span<byte const> data) const -> di::Expected<vo
     return {};
 }
 
-auto read_to_string(di::PathView path) -> di::Result<di::String> {
+auto read_to_string_sync(di::PathView path) -> di::Result<di::String> {
     auto file = TRY(open_sync(path, OpenMode::Readonly));
     return di::read_to_string(file);
 }

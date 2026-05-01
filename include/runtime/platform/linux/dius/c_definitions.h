@@ -1,7 +1,8 @@
 #pragma once
 
-#include <asm-generic/ioctls.h>
-#include <asm-generic/termios.h>
+#include <asm/ioctls.h>
+#include <asm/socket.h>
+#include <asm/termios.h>
 #include <asm/unistd.h>
 #include <linux/errno.h>
 #include <linux/fcntl.h>
@@ -40,4 +41,14 @@ struct Stat {
 };
 
 using UtsName = struct ::new_utsname;
+}
+
+namespace dius {
+using socklen_t = u32;
+
+// Unclear why the linux kernel headers don't define these...
+constexpr inline auto AF_UNIX = 1;
+constexpr inline auto SOCK_STREAM = 1;
+constexpr inline auto SOCK_CLOEXEC = 0x80000;
+constexpr inline auto SOCK_NONBLOCK = 0x800;
 }

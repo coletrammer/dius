@@ -6,6 +6,8 @@
 #include "di/vocab/expected/prelude.h"
 #include "di/vocab/span/prelude.h"
 #include "dius/c_definitions.h"
+#include "dius/net/address.h"
+#include "dius/net/socket.h"
 #include "dius/platform_process.h"
 
 namespace dius::syscalls {
@@ -48,4 +50,12 @@ auto sys_lstat(di::PathView path) -> Result<Stat>;
 
 auto sys_uname() -> Result<UtsName>;
 auto sys_clock_nanosleep(int clock, int flags, timespec timespec) -> Result<::timespec>;
+
+auto sys_fcntl(int fd, int op, int arg) -> Result<i32>;
+
+auto sys_listen(int fd, i32 backlog) -> Result<>;
+auto sys_bind(int fd, net::UnixAddress const& address) -> Result<>;
+auto sys_connect(int fd, net::UnixAddress const& address) -> Result<>;
+auto sys_shutdown(int fd, net::Shutdown mode) -> Result<>;
+auto sys_getsockopt(int fd, int level, int optname, void* optval, socklen_t optlen) -> Result<>;
 }

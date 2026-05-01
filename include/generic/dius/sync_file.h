@@ -10,7 +10,6 @@
 #include "dius/tty.h"
 
 namespace dius {
-#ifdef PROT_NONE
 enum class Protection : int {
     None = PROT_NONE,
     Executable = PROT_EXEC,
@@ -35,7 +34,25 @@ enum class MapFlags : int {
 };
 
 DI_DEFINE_ENUM_BITWISE_OPERATIONS(MapFlags)
-#endif
+
+enum class OpenMode {
+    Readonly,
+    WriteNew,
+    WriteClobber,
+    ReadWrite,
+    AppendOnly,
+    ReadWriteClobber,
+    AppendReadWrite,
+};
+
+enum class OpenFlags {
+    None = 0,
+    NoControllingTerminal = 1,
+    KeepAfterExec = 2,
+    NonBlocking = 4,
+};
+
+DI_DEFINE_ENUM_BITWISE_OPERATIONS(OpenFlags)
 
 class SyncFile {
 public:
@@ -103,20 +120,12 @@ public:
 
     auto get_termios_restorer() -> di::Expected<di::Function<void()>, di::GenericCode>;
 
+    auto set_open_flags(OpenFlags flags) -> di::Expected<void, di::GenericCode>;
+
 private:
     Owned m_owned { Owned::No };
     int m_fd { -1 };
 };
-
-enum class OpenMode { Readonly, WriteNew, WriteClobber, ReadWrite, AppendOnly, ReadWriteClobber, AppendReadWrite };
-
-enum class OpenFlags {
-    None = 0,
-    NoControllingTerminal = 1,
-    KeepAfterExec = 2,
-};
-
-DI_DEFINE_ENUM_BITWISE_OPERATIONS(OpenFlags)
 
 auto open_sync(di::PathView path, OpenMode open_mode, u16 create_mode = 0666, OpenFlags flags = OpenFlags::None)
     -> di::Expected<SyncFile, di::GenericCode>;
@@ -128,11 +137,11 @@ auto open_sync(di::PathView path, OpenMode open_mode, u16 create_mode = 0666, Op
 ///
 /// @return A Expected<Tuple>, where the first file is the read end of the pipe and the second file is
 /// the write end of the pipe.
-auto open_pipe(OpenFlags flags) -> di::Expected<di::Tuple<SyncFile, SyncFile>, di::GenericCode>;
+auto open_pipe_sync(OpenFlags flags) -> di::Expected<di::Tuple<SyncFile, SyncFile>, di::GenericCode>;
 
-auto open_psuedo_terminal_controller(OpenMode open_mode) -> di::Expected<SyncFile, di::GenericCode>;
-auto open_tempory_file() -> di::Expected<SyncFile, di::GenericCode>;
-auto read_to_string(di::PathView path) -> di::Result<di::String>;
+auto open_psuedo_terminal_controller_sync(OpenMode open_mode) -> di::Expected<SyncFile, di::GenericCode>;
+auto open_tempory_file_sync() -> di::Expected<SyncFile, di::GenericCode>;
+auto read_to_string_sync(di::PathView path) -> di::Result<di::String>;
 
 inline auto std_in = SyncFile { SyncFile::Owned::No, 0 };
 inline auto std_out = SyncFile { SyncFile::Owned::No, 1 };

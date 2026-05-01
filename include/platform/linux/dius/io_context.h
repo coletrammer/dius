@@ -1,7 +1,7 @@
 #pragma once
 
-#include "dius/linux/io_uring_context.h"
+#include "dius/linux/epoll_context.h"
 
 namespace dius {
-using IoContext = linux::IoUringContext;
+using IoContext = linux::epoll::Context;
 }

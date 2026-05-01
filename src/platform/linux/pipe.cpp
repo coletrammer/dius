@@ -1,7 +1,7 @@
 #include "dius/sync_file.h"
 
 namespace dius {
-auto open_pipe(OpenFlags flags) -> di::Expected<di::Tuple<SyncFile, SyncFile>, di::GenericCode> {
+auto open_pipe_sync(OpenFlags flags) -> di::Expected<di::Tuple<SyncFile, SyncFile>, di::GenericCode> {
     auto pipe_flags = !!(flags & OpenFlags::KeepAfterExec) ? 0 : O_CLOEXEC;
     int fds[2];
     if (pipe2(fds, pipe_flags) < 0) {

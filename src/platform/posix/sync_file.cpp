@@ -85,6 +85,15 @@ auto SyncFile::get_termios_restorer() -> di::Expected<di::Function<void()>, di::
     });
 }
 
+auto SyncFile::set_open_flags(OpenFlags flags) -> di::Expected<void, di::GenericCode> {
+    TRY(syscalls::sys_fcntl(file_descriptor(), F_SETFD, !(flags & OpenFlags::KeepAfterExec)));
+    i32 base_flags = TRY(syscalls::sys_fcntl(file_descriptor(), F_GETFL, 0));
+    if (!!(flags & OpenFlags::NonBlocking)) {
+        base_flags |= O_NONBLOCK;
+    }
+    return syscalls::sys_fcntl(file_descriptor(), F_SETFL, base_flags).transform(di::into_void);
+}
+
 auto open_sync(di::PathView path, OpenMode open_mode, u16 create_mode, OpenFlags open_flags)
     -> di::Expected<SyncFile, di::GenericCode> {
     auto flags = detail::open_mode_flags(open_mode, open_flags);
@@ -92,7 +101,7 @@ auto open_sync(di::PathView path, OpenMode open_mode, u16 create_mode, OpenFlags
     return SyncFile { SyncFile::Owned::Yes, fd };
 }
 
-auto open_psuedo_terminal_controller(OpenMode open_mode) -> di::Expected<SyncFile, di::GenericCode> {
+auto open_psuedo_terminal_controller_sync(OpenMode open_mode) -> di::Expected<SyncFile, di::GenericCode> {
     auto flags = detail::open_mode_flags(open_mode, OpenFlags::NoControllingTerminal);
     auto fd = TRY(syscalls::sys_open("/dev/ptmx"_pv, flags, 0));
     auto result = SyncFile { SyncFile::Owned::Yes, fd };

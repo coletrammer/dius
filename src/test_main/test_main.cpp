@@ -7,7 +7,7 @@ namespace dius::test {
 static auto main(di::test::TestManager::Args& args) -> di::Result<void> {
     auto& manager = di::test::TestManager::the();
 
-    manager.set_writer(di::ref(dius::std_err));
+    manager.set_writer(di::BufferedWriter(di::c_<16384zu>, di::ref(dius::std_err)));
     manager.set_did_finish(dius::system::exit_process);
 
     return manager.run_tests(args);

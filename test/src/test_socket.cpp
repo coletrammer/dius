@@ -4,26 +4,25 @@
 #include "di/execution/algorithm/when_all.h"
 #include "di/execution/coroutine/prelude.h"
 #include "di/execution/interface/schedule.h"
-#include "di/execution/io/async_net.h"
-#include "di/execution/io/async_read_exactly.h"
-#include "di/execution/io/async_write_exactly.h"
-#include "di/execution/io/async_write_some.h"
 #include "di/execution/io/ipc_binary.h"
 #include "di/execution/io/ipc_protocol.h"
+#include "di/execution/io/read_exactly.h"
+#include "di/execution/io/write_exactly.h"
+#include "di/execution/io/write_some.h"
 #include "di/reflect/field.h"
 #include "di/reflect/prelude.h"
 #include "di/test/prelude.h"
 #include "di/vocab/span/as_bytes.h"
 #include "di/vocab/span/as_writable_bytes.h"
+#include "dius/io.h"
 #include "dius/io_context.h"
 #include "dius/net/address.h"
 #include "dius/net/socket.h"
 #include "dius/print.h"
 
-#ifdef __linux__
 namespace socket_test {
 
-static void unix_scoket() {
+static void unix_socket() {
     auto context = *di::create<dius::IoContext>();
     auto scheduler = context.get_scheduler();
 
@@ -36,15 +35,15 @@ static void unix_scoket() {
     auto executed = false;
     auto server = ex::use_resources(
         [&](auto& passive_socket) -> di::Lazy<> {
-            co_await ex::async_bind(passive_socket, address.clone());
-            co_await ex::async_listen(passive_socket, 1);
+            co_await dius::bind(passive_socket, address.clone());
+            co_await dius::listen(passive_socket, 1);
 
             co_await ex::use_resources(
                 [&](auto& socket) -> di::Lazy<> {
                     auto buffer = di::Vector<char> {};
                     buffer.resize(message.size());
 
-                    co_await ex::async_read_exactly(socket, di::as_writable_bytes(buffer.span()));
+                    co_await dius::read_exactly(socket, di::as_writable_bytes(buffer.span()));
 
                     auto received = di::move(buffer) | di::to<di::TransparentString>();
                     ASSERT_EQ(received, message);
@@ -52,21 +51,25 @@ static void unix_scoket() {
                     executed = true;
                     co_return {};
                 },
-                ex::async_accept(passive_socket));
+                dius::accept(passive_socket));
 
             co_return {};
         },
-        ex::async_make_socket(scheduler));
+        dius::make_unix_socket(scheduler));
 
     auto client = ex::use_resources(
         [&](auto& socket) -> di::Lazy<> {
-            co_await ex::async_connect(socket, address.clone());
+            for (auto _ : di::range(3)) {
+                if (co_await (dius::connect(socket, address.clone()) | ex::into_result)) {
+                    break;
+                }
+            }
 
-            co_await ex::async_write_exactly(socket, di::as_bytes(message.span()));
+            co_await dius::write_exactly(socket, di::as_bytes(message.span()));
 
             co_return {};
         },
-        ex::async_make_socket(scheduler));
+        dius::make_unix_socket(scheduler));
 
     auto result = di::sync_wait_on(context, ex::when_all(di::move(server), di::move(client)));
     ASSERT(result);
@@ -124,8 +127,8 @@ static void ipc_binary() {
     auto executed = false;
     auto server = ex::use_resources(
         [&](auto& passive_socket) -> di::Lazy<> {
-            co_await ex::async_bind(passive_socket, address.clone());
-            co_await ex::async_listen(passive_socket, 1);
+            co_await dius::bind(passive_socket, address.clone());
+            co_await dius::listen(passive_socket, 1);
 
             co_await ex::use_resources(
                 [&](auto& socket) -> di::Lazy<> {
@@ -141,15 +144,19 @@ static void ipc_binary() {
                                                                   })));
                     co_return {};
                 },
-                ex::async_accept(passive_socket));
+                dius::accept(passive_socket));
 
             co_return {};
         },
-        ex::async_make_socket(scheduler));
+        dius::make_unix_socket(scheduler));
 
     auto client = ex::use_resources(
         [&](auto& socket) -> di::Lazy<> {
-            co_await ex::async_connect(socket, address.clone());
+            for (auto _ : di::range(3)) {
+                if (co_await (dius::connect(socket, address.clone()) | ex::into_result)) {
+                    break;
+                }
+            }
 
             co_await ex::ipc_binary_connect_to_server<MyProtocol>(
                 di::ipc::ReceiverTransmitter(socket), di::ipc::Transmit([&](auto connection) -> di::Lazy<> {
@@ -159,20 +166,19 @@ static void ipc_binary() {
                     ASSERT_EQ(r.x, 6);
                     ASSERT_EQ(r.y, 2);
 
-                    co_await ex::async_shutdown(socket, dius::net::Shutdown::ReadWrite);
+                    co_await dius::shutdown(socket, dius::net::Shutdown::ReadWrite);
                     co_return {};
                 }));
 
             co_return {};
         },
-        ex::async_make_socket(scheduler));
+        dius::make_unix_socket(scheduler));
 
     auto result = di::sync_wait_on(context, ex::when_all(di::move(server), di::move(client)));
     ASSERT(result);
     ASSERT(executed);
 }
 
-TEST(socket, unix_scoket)
+TEST(socket, unix_socket)
 TEST(socket, ipc_binary)
 }
-#endif

@@ -3,6 +3,7 @@
 #include "di/container/string/zstring.h"
 #include "dius/c_definitions.h"
 #include "dius/config.h"
+#include "dius/net/socket.h"
 
 namespace dius::syscalls {
 auto sys_read(int fd, di::Span<byte> data) -> Result<usize> {
@@ -298,4 +299,60 @@ auto sys_clock_nanosleep(int clock, int flags, timespec timespec) -> Result<::ti
     return rem;
 }
 #endif
+
+auto sys_fcntl(int fd, int op, int arg) -> Result<i32> {
+    auto result = ::fcntl(fd, op, arg);
+    if (result < 0) {
+        return di::Unexpected(di::BasicError(errno));
+    }
+    return result;
+}
+
+auto sys_listen(int fd, i32 backlog) -> Result<> {
+    auto result = ::listen(fd, backlog);
+    if (result < 0) {
+        return di::Unexpected(di::BasicError(errno));
+    }
+    return {};
+}
+
+auto sys_bind(int fd, net::UnixAddress const& address) -> Result<> {
+    auto addr = sockaddr_un {};
+    addr.sun_family = AF_UNIX;
+    auto* end = di::copy(address.path(), addr.sun_path).out;
+    *end = '\0';
+    auto result = ::bind(fd, &addr, sizeof(addr));
+    if (result < 0) {
+        return di::Unexpected(di::BasicError(errno));
+    }
+    return {};
+}
+
+auto sys_connect(int fd, net::UnixAddress const& address) -> Result<> {
+    auto addr = sockaddr_un {};
+    addr.sun_family = AF_UNIX;
+    auto* end = di::copy(address.path(), addr.sun_path).out;
+    *end = '\0';
+    auto result = ::connect(fd, &addr, sizeof(addr));
+    if (result < 0) {
+        return di::Unexpected(di::BasicError(errno));
+    }
+    return {};
+}
+
+auto sys_shutdown(int fd, net::Shutdown mode) -> Result<> {
+    auto result = ::shutdown(fd, di::to_underlying(arg));
+    if (result < 0) {
+        return di::Unexpected(di::BasicError(errno));
+    }
+    return {};
+}
+
+auto sys_getsockopt(int fd, int level, int optname, void* optval, socklen_t optlen) -> Result<> {
+    auto result = ::getsockopt(fd, level, optname, optval, optlen);
+    if (result < 0) {
+        return di::Unexpected(di::BasicError(errno));
+    }
+    return {};
+}
 }
