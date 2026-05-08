@@ -321,7 +321,7 @@ auto sys_bind(int fd, net::UnixAddress const& address) -> Result<> {
     addr.sun_family = AF_UNIX;
     auto* end = di::copy(address.path(), addr.sun_path).out;
     *end = '\0';
-    auto result = ::bind(fd, &addr, sizeof(addr));
+    auto result = ::bind(fd, (sockaddr*) &addr, sizeof(addr));
     if (result < 0) {
         return di::Unexpected(di::BasicError(errno));
     }
@@ -333,7 +333,7 @@ auto sys_connect(int fd, net::UnixAddress const& address) -> Result<> {
     addr.sun_family = AF_UNIX;
     auto* end = di::copy(address.path(), addr.sun_path).out;
     *end = '\0';
-    auto result = ::connect(fd, &addr, sizeof(addr));
+    auto result = ::connect(fd, (sockaddr*) &addr, sizeof(addr));
     if (result < 0) {
         return di::Unexpected(di::BasicError(errno));
     }
@@ -341,7 +341,7 @@ auto sys_connect(int fd, net::UnixAddress const& address) -> Result<> {
 }
 
 auto sys_shutdown(int fd, net::Shutdown mode) -> Result<> {
-    auto result = ::shutdown(fd, di::to_underlying(arg));
+    auto result = ::shutdown(fd, di::to_underlying(mode));
     if (result < 0) {
         return di::Unexpected(di::BasicError(errno));
     }
@@ -349,7 +349,7 @@ auto sys_shutdown(int fd, net::Shutdown mode) -> Result<> {
 }
 
 auto sys_getsockopt(int fd, int level, int optname, void* optval, socklen_t optlen) -> Result<> {
-    auto result = ::getsockopt(fd, level, optname, optval, optlen);
+    auto result = ::getsockopt(fd, level, optname, optval, &optlen);
     if (result < 0) {
         return di::Unexpected(di::BasicError(errno));
     }

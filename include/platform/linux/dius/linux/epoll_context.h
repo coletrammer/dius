@@ -8,9 +8,12 @@
 #include "di/function/make_deferred.h"
 #include "dius/io.h"
 #include "dius/linux/epoll.h"
+#include "dius/linux/eventfd.h"
+#include "dius/linux/signalfd.h"
 #include "dius/net/address.h"
 #include "dius/net/socket.h"
 #include "dius/platform_error.h"
+#include "dius/platform_process.h"
 #include "dius/sync_file.h"
 
 namespace dius::linux::epoll {
@@ -28,9 +31,19 @@ struct OperationBase : di::IntrusiveForwardListNode<> {
 };
 
 struct WaitableOperationBase : OperationBase {
+    i32 fd { -1 };
     EventType events { EventType::None };
 
-    explicit WaitableOperationBase(EventType events) : events(events) {}
+    explicit WaitableOperationBase(i32 fd, EventType events) : fd(fd), events(events) {}
+
+    virtual void notify() = 0;
+    virtual void terminate() = 0;
+};
+
+struct SignalOperationBase : OperationBase {
+    Signal signal {};
+
+    explicit SignalOperationBase(Signal signal) : signal(signal) {}
 
     virtual void notify() = 0;
     virtual void terminate() = 0;
@@ -50,28 +63,37 @@ class Context {
 public:
     static auto create() -> di::Result<Context>;
 
-    explicit Context(Handle epoll_handle, SyncFile eventfd);
+    explicit Context(Handle epoll_handle, Eventfd eventfd, Signalfd signalfd);
 
-    Context(Context&& other) : m_epoll_handle(di::move(other.m_epoll_handle)), m_eventfd(di::move(other.m_eventfd)) {}
+    Context(Context&& other)
+        : m_epoll_handle(di::move(other.m_epoll_handle))
+        , m_eventfd(di::move(other.m_eventfd))
+        , m_signalfd(di::move(other.m_signalfd)) {}
 
     auto get_scheduler() -> Scheduler { return Scheduler(this); }
     void run();
     void finish();
 
     auto try_start(OperationBase&) -> bool;
-    void add_waiter(i32 fd, WaitableOperationBase&);
-    void cancel(i32 fd, WaitableOperationBase&);
+    void add_waiter(WaitableOperationBase&);
+    void add_waiter(SignalOperationBase&);
+    void cancel(WaitableOperationBase&);
+    void cancel(SignalOperationBase&);
     void wake();
 
 private:
     void dispatch_event(i32 fd, EventType events);
+    void dispatch_signal();
 
     Handle m_epoll_handle;
-    SyncFile m_eventfd;
+    Eventfd m_eventfd;
+    Signalfd m_signalfd;
     di::Atomic<i32> m_staring_operations { 0 };
     di::Atomic<bool> m_need_wake { false };
     di::IntrusiveAtomicBatchQueue<OperationBase> m_queued_operations;
     di::TreeMap<i32, di::IntrusiveForwardList<WaitableOperationBase>> m_waiting_operations;
+    di::TreeMap<Signal, di::IntrusiveForwardList<SignalOperationBase>> m_signal_operations;
+    bool m_signal_set_changed { false };
 };
 
 struct Env {
@@ -141,7 +163,7 @@ struct CancelOperation : OperationBase {
         // as the stop callback already fired. This additionally means we can tell at this point
         // whether or not we've completed normally (and thus do not need to cancel()).
         if (!outer->value.has_value()) {
-            outer->context->cancel(outer->fd, *outer);
+            outer->context->cancel(*outer);
         }
         outer->complete();
     }
@@ -154,22 +176,22 @@ struct WaitableOperationStopCallbackFunction {
     void operator()() const noexcept { outer->try_cancel(); }
 };
 
-template<typename Self, typename Rec, typename T>
-struct WaitableOperationImplBase : WaitableOperationBase {
+template<typename Self, typename Rec, typename Base, typename T>
+struct WaitableOperationImplBase : Base {
     using StopCallback = WaitableOperationStopCallbackFunction<WaitableOperationImplBase>;
     using StopToken = di::meta::StopTokenOf<di::meta::EnvOf<Rec>>;
     using StopCallbackStorage = StopToken::template CallbackType<StopCallback>;
 
     Context* context { nullptr };
-    i32 fd { -1 };
     [[no_unique_address]] Rec receiver;
     di::Optional<T> value;
     di::Atomic<bool> get_to_complete {};
     di::Optional<CancelOperation<WaitableOperationImplBase>> cancel_op;
     di::Optional<StopCallbackStorage> stop_callback;
 
-    explicit WaitableOperationImplBase(EventType events, Context* context, i32 fd, Rec receiver)
-        : WaitableOperationBase(events), context(context), fd(fd), receiver(di::move(receiver)) {}
+    template<typename... Args>
+    explicit WaitableOperationImplBase(Context* context, Rec&& receiver, Args&&... args)
+        : Base(di::forward<Args>(args)...), context(context), receiver(di::move(receiver)) {}
 
     void execute() override {
         auto stop_token = ex::get_stop_token(ex::get_env(this->receiver));
@@ -194,7 +216,7 @@ struct WaitableOperationImplBase : WaitableOperationBase {
     void terminate() override { ex::set_stopped(di::move(this->receiver)); }
 
     void add_waiter(StopToken stop_token) {
-        this->context->add_waiter(this->fd, *this);
+        this->context->add_waiter(*this);
         this->stop_callback.emplace(stop_token, StopCallback(this));
     }
 
@@ -307,13 +329,13 @@ struct ReadSomeSender : SenderBase<ReadSomeSender, usize> {
     ReadSomeArgs args;
 
     template<typename Rec>
-    struct Op : WaitableOperationImplBase<Op<Rec>, Rec, di::Result<usize>> {
-        using Base = WaitableOperationImplBase<Op, Rec, di::Result<usize>>;
+    struct Op : WaitableOperationImplBase<Op<Rec>, Rec, WaitableOperationBase, di::Result<usize>> {
+        using Base = WaitableOperationImplBase<Op, Rec, WaitableOperationBase, di::Result<usize>>;
 
         ReadSomeArgs args;
 
         Op(Context* context, i32 fd, ReadSomeArgs args, Rec&& receiver)
-            : Base(EventType::Read, context, fd, di::move(receiver)), args(di::move(args)) {}
+            : Base(context, di::move(receiver), fd, EventType::Read), args(di::move(args)) {}
 
         auto do_notify() -> di::Result<usize> {
             auto file = SyncFile(SyncFile::Owned::No, this->fd);
@@ -340,13 +362,13 @@ struct WriteSomeSender : SenderBase<WriteSomeSender, usize> {
     WriteSomeArgs args;
 
     template<typename Rec>
-    struct Op : WaitableOperationImplBase<Op<Rec>, Rec, di::Result<usize>> {
-        using Base = WaitableOperationImplBase<Op, Rec, di::Result<usize>>;
+    struct Op : WaitableOperationImplBase<Op<Rec>, Rec, WaitableOperationBase, di::Result<usize>> {
+        using Base = WaitableOperationImplBase<Op, Rec, WaitableOperationBase, di::Result<usize>>;
 
         WriteSomeArgs args;
 
         Op(Context* context, i32 fd, WriteSomeArgs args, Rec&& receiver)
-            : Base(EventType::Write, context, fd, di::move(receiver)), args(di::move(args)) {}
+            : Base(context, di::move(receiver), fd, EventType::Write), args(di::move(args)) {}
 
         auto do_notify() -> di::Result<usize> {
             auto file = SyncFile(SyncFile::Owned::No, this->fd);
@@ -389,13 +411,13 @@ struct ConnectUnixSender : SenderBase<ConnectUnixSender> {
     ConnectUnixArgs args;
 
     template<typename Rec>
-    struct Op : WaitableOperationImplBase<Op<Rec>, Rec, di::Result<>> {
-        using Base = WaitableOperationImplBase<Op, Rec, di::Result<>>;
+    struct Op : WaitableOperationImplBase<Op<Rec>, Rec, WaitableOperationBase, di::Result<>> {
+        using Base = WaitableOperationImplBase<Op, Rec, WaitableOperationBase, di::Result<>>;
 
         ConnectUnixArgs args;
 
         Op(Context* context, i32 fd, ConnectUnixArgs args, Rec&& receiver)
-            : Base(EventType::Write, context, fd, di::move(receiver)), args(di::move(args)) {}
+            : Base(context, di::move(receiver), fd, EventType::Write), args(di::move(args)) {}
 
         void execute() override {
             auto stop_token = ex::get_stop_token(ex::get_env(this->receiver));
@@ -550,13 +572,13 @@ struct AcceptSender : SenderBase<AcceptSender, SocketToken> {
     AcceptArgs args;
 
     template<typename Rec>
-    struct Op : WaitableOperationImplBase<Op<Rec>, Rec, di::Result<SocketToken>> {
-        using Base = WaitableOperationImplBase<Op, Rec, di::Result<SocketToken>>;
+    struct Op : WaitableOperationImplBase<Op<Rec>, Rec, WaitableOperationBase, di::Result<SocketToken>> {
+        using Base = WaitableOperationImplBase<Op, Rec, WaitableOperationBase, di::Result<SocketToken>>;
 
         AcceptArgs args;
 
         Op(Context* context, i32 fd, AcceptArgs args, Rec&& receiver)
-            : Base(EventType::Read, context, fd, di::move(receiver)), args(di::move(args)) {}
+            : Base(context, di::move(receiver), fd, EventType::Read), args(di::move(args)) {}
 
         auto do_notify() -> di::Result<SocketToken> {
             return net::SyncSocket(net::SyncSocket::Owned::No, this->fd)
@@ -570,6 +592,28 @@ struct AcceptSender : SenderBase<AcceptSender, SocketToken> {
     template<di::ReceiverOf<Base::CompletionSignatures> Rec>
     friend auto tag_invoke(di::Tag<ex::connect>, AcceptSender self, Rec receiver) {
         return Op<Rec> { self.context, self.fd, di::move(self.args), di::move(receiver) };
+    }
+};
+
+struct SignalledSender : SenderBase<SignalledSender> {
+    using Base = SenderBase<SignalledSender>;
+
+    explicit SignalledSender(Context* context, Signal signal) : Base(context), signal(signal) {}
+
+    Signal signal {};
+
+    template<typename Rec>
+    struct Op : WaitableOperationImplBase<Op<Rec>, Rec, SignalOperationBase, di::Void> {
+        using Base = WaitableOperationImplBase<Op<Rec>, Rec, SignalOperationBase, di::Void>;
+
+        Op(Context* context, Signal signal, Rec&& receiver) : Base(context, di::move(receiver), signal) {}
+
+        auto do_notify() -> di::Void { return {}; }
+    };
+
+    template<di::ReceiverOf<Base::CompletionSignatures> Rec>
+    friend auto tag_invoke(di::Tag<ex::connect>, SignalledSender self, Rec receiver) {
+        return Op<Rec> { self.context, self.signal, di::move(receiver) };
     }
 };
 
@@ -718,5 +762,9 @@ inline auto tag_invoke(di::Tag<make_unix_socket>, Scheduler self, OpenFlags open
 
 inline auto tag_invoke(di::Tag<accept>, SocketToken const& token, OpenFlags open_flags) {
     return di::make_deferred<AcceptedSocket>(token.context, token.fd, AcceptArgs(open_flags));
+}
+
+inline auto tag_invoke(di::Tag<signalled>, Scheduler self, Signal signal) {
+    return SignalledSender(self.context, signal);
 }
 }

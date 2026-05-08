@@ -1,9 +1,8 @@
 #pragma once
 
-#include <linux/eventpoll.h>
-
 #include "di/container/tree/tree_map.h"
 #include "di/container/tree/tree_set.h"
+#include "dius/c_definitions.h"
 #include "dius/steady_clock.h"
 #include "dius/sync_file.h"
 

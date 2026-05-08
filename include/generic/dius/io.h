@@ -7,6 +7,7 @@
 #include "di/execution/io/write_some.h"
 #include "dius/net/address.h"
 #include "dius/net/socket.h"
+#include "dius/platform_process.h"
 #include "dius/sync_file.h"
 
 namespace dius {
@@ -173,4 +174,18 @@ namespace shutdown_ns {
 }
 
 constexpr inline auto shutdown = shutdown_ns::Function {};
+
+namespace signalled_ns {
+    struct Function {
+        template<di::concepts::Scheduler Sched>
+        requires(di::concepts::TagInvocable<Function, Sched, Signal>)
+        static auto operator()(Sched&& sched, Signal signal) {
+            static_assert(di::concepts::Sender<di::meta::TagInvokeResult<Function, Sched, Signal>>,
+                          "dius::siganlled() customizations must return a sender");
+            return tag_invoke(Function {}, di::forward<Sched>(sched), signal);
+        }
+    };
+}
+
+constexpr inline auto signalled = signalled_ns::Function {};
 }

@@ -1,5 +1,7 @@
 #include <spawn.h>
 
+#include <signal.h>
+
 #include "dius/filesystem/directory_iterator.h"
 #include "dius/posix/open_mode_flags.h"
 #include "dius/posix/syscalls.h"
@@ -63,7 +65,10 @@ auto Process::spawn_with_posix_spawn() && -> di::Result<ProcessHandle> {
     auto attrs_guard = di::ScopeExit([&] {
         posix_spawnattr_destroy(&attrs);
     });
-    auto attr_flags = short(m_new_session ? POSIX_SPAWN_SETSID : 0);
+    auto sigset = sigset_t {};
+    sigemptyset(&sigset);
+    posix_spawnattr_setsigmask(&attrs, &sigset);
+    auto attr_flags = short(POSIX_SPAWN_SETSIGMASK | (m_new_session ? POSIX_SPAWN_SETSID : 0));
     posix_spawnattr_setflags(&attrs, attr_flags);
 
     auto pid = pid_t(-1);

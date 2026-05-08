@@ -5,10 +5,13 @@
 #include <asm/termios.h>
 #include <asm/unistd.h>
 #include <linux/errno.h>
+#include <linux/eventfd.h>
+#include <linux/eventpoll.h>
 #include <linux/fcntl.h>
 #include <linux/mman.h>
 #include <linux/sched.h>
 #include <linux/signal.h>
+#include <linux/signalfd.h>
 #include <linux/socket.h>
 #include <linux/stat.h>
 #include <linux/time.h>
@@ -44,7 +47,18 @@ using UtsName = struct ::new_utsname;
 }
 
 namespace dius {
+// Linux header defines this differently than glibc.
+struct [[gnu::packed]] epoll_event {
+    u32 events { 0 };
+    union {
+        u64 u64;
+    } data;
+};
+
 using socklen_t = u32;
+
+// I'm not sure why this isn't a u128.
+using kernel_sigset_t = u64;
 
 // Unclear why the linux kernel headers don't define these...
 constexpr inline auto AF_UNIX = 1;

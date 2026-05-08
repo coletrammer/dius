@@ -6,6 +6,7 @@
 #include "di/chrono/duration/duration_cast.h"
 #include "di/chrono/duration/duration_literals.h"
 #include "dius/steady_clock.h"
+#include "dius/system/process.h"
 
 namespace dius {
 auto Thread::do_start(di::Function<void()> entry, di::Box<di::InPlaceStopSource> stop_source) -> di::Result<Thread> {
@@ -15,6 +16,7 @@ auto Thread::do_start(di::Function<void()> entry, di::Box<di::InPlaceStopSource>
     auto result = pthread_create(
         &platform->native_handle, nullptr,
         [](void* entry) -> void* {
+            (void) system::mask_all_signals();
             auto* as_function = reinterpret_cast<di::Function<void()>*>(entry);
             (*as_function)();
             return nullptr;

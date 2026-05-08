@@ -4,22 +4,28 @@
 #include "di/util/defer_construct.h"
 #include "dius/linux/epoll.h"
 #include "dius/linux/eventfd.h"
+#include "dius/linux/signalfd.h"
+#include "dius/system/process.h"
 
 namespace dius::linux::epoll {
 auto Context::create() -> di::Result<Context> {
     auto epoll_handle = TRY(Handle::create());
     auto eventfd = TRY(create_eventfd(0));
+    auto signalfd = TRY(create_signalfd());
 
     // Register the eventfd permanently for read events, to allow wake ups.
     epoll_handle.request_notification(eventfd.file_descriptor(), EventType::Read);
 
+    // Register the signalfd permanently for read events, to allow for signal notifications.
+    epoll_handle.request_notification(signalfd.file_descriptor(), EventType::Read);
+
     return di::Result<Context>(di::in_place, di::DeferConstruct([&] {
-                                   return Context(di::move(epoll_handle), di::move(eventfd));
+                                   return Context(di::move(epoll_handle), di::move(eventfd), di::move(signalfd));
                                }));
 }
 
-Context::Context(Handle epoll_handle, SyncFile eventfd)
-    : m_epoll_handle(di::move(epoll_handle)), m_eventfd(di::move(eventfd)) {}
+Context::Context(Handle epoll_handle, Eventfd eventfd, Signalfd signalfd)
+    : m_epoll_handle(di::move(epoll_handle)), m_eventfd(di::move(eventfd)), m_signalfd(di::move(signalfd)) {}
 
 void Context::run() {
     constexpr auto max_event_count = 256u;
@@ -34,13 +40,19 @@ void Context::run() {
             op.value().execute();
         }
 
+        if (di::exchange(m_signal_set_changed, false)) {
+            auto signals = di::keys(m_signal_operations) | di::to<di::Vector>();
+            ASSERT(system::set_signal_mask(signals.span()));
+            ASSERT(m_signalfd.listen(signals.span()));
+        }
+
         auto events = di::Array<epoll_event, max_event_count> {};
         auto result = m_epoll_handle.wait(events.span(), {});
         ASSERT(result);
 
         m_need_wake.store(false, di::MemoryOrder::Release);
         for (auto const& event : result.value()) {
-            dispatch_event(i32(event.data), EventType(event.events));
+            dispatch_event(i32(event.data.u64), EventType(event.events));
         }
     }
 
@@ -53,6 +65,11 @@ void Context::run() {
     // Cancel all waiters.
     for (auto& [_, waiters] : m_waiting_operations) {
         while (auto op = waiters.pop_front()) {
+            op.value().terminate();
+        }
+    }
+    for (auto& [_, signal_waiters] : m_signal_operations) {
+        while (auto op = signal_waiters.pop_front()) {
             op.value().terminate();
         }
     }
@@ -89,7 +106,8 @@ auto Context::try_start(OperationBase& op) -> bool {
     return true;
 }
 
-void Context::add_waiter(i32 fd, WaitableOperationBase& op) {
+void Context::add_waiter(WaitableOperationBase& op) {
+    auto const fd = op.fd;
     auto events = op.events;
     auto& waiting_ops = m_waiting_operations[fd];
     for (auto& op : waiting_ops) {
@@ -99,7 +117,14 @@ void Context::add_waiter(i32 fd, WaitableOperationBase& op) {
     waiting_ops.push_back(op);
 }
 
-void Context::cancel(i32 fd, WaitableOperationBase& op) {
+void Context::add_waiter(SignalOperationBase& op) {
+    auto& waiting_ops = m_signal_operations[op.signal];
+    waiting_ops.push_back(op);
+    m_signal_set_changed = true;
+}
+
+void Context::cancel(WaitableOperationBase& op) {
+    auto const fd = op.fd;
     auto outer_it = m_waiting_operations.find(fd);
     ASSERT_NOT_EQ(outer_it, m_waiting_operations.end());
 
@@ -124,7 +149,29 @@ void Context::cancel(i32 fd, WaitableOperationBase& op) {
 
     // Clean up the waiting operations entry if possible.
     if (waiting_ops.empty()) {
-        m_waiting_operations.erase(fd);
+        m_waiting_operations.erase(outer_it);
+    }
+}
+
+void Context::cancel(SignalOperationBase& op) {
+    auto outer_it = m_signal_operations.find(op.signal);
+    ASSERT_NOT_EQ(outer_it, m_signal_operations.end());
+
+    // Erase the signal operation.
+    auto& waiting_ops = outer_it->get<1>();
+    for (auto it = waiting_ops.before_begin(); it != waiting_ops.before_end();) {
+        auto& current = *di::next(it);
+        if (&op == &current) {
+            waiting_ops.erase_after(it);
+        } else {
+            ++it;
+        }
+    }
+
+    // Clean up the waiting operations entry if possible.
+    if (waiting_ops.empty()) {
+        m_signal_operations.erase(outer_it);
+        m_signal_set_changed = true;
     }
 }
 
@@ -138,16 +185,37 @@ void Context::wake() {
         return;
     }
 
-    auto wakeup_value = di::bit_cast<di::Array<byte, sizeof(i64)>>(1_i64);
-    ASSERT(m_eventfd.write_exactly(wakeup_value.span()));
+    ASSERT(m_eventfd.write(1));
+}
+
+void Context::dispatch_signal() {
+    auto signal_result = m_signalfd.read();
+    ASSERT(signal_result);
+
+    auto it = m_signal_operations.find(signal_result.value());
+    if (it == m_signal_operations.end()) {
+        return;
+    }
+
+    // The signal notification is broadcast to all listeners.
+    auto& ops = it->get<1>();
+    while (auto op = ops.pop_front()) {
+        op.value().notify();
+    }
+    m_signal_operations.erase(it);
+    m_signal_set_changed = true;
 }
 
 void Context::dispatch_event(i32 fd, EventType events) {
     // Special case for the eventfd, where we simply read the eventfd to stop the notification
     // until the next wakeup.
     if (fd == m_eventfd.file_descriptor()) {
-        auto bytes = di::Array<byte, sizeof(i64)> {};
-        (void) m_eventfd.read_exactly(bytes.span());
+        (void) m_eventfd.read();
+        return;
+    }
+
+    if (fd == m_signalfd.file_descriptor()) {
+        dispatch_signal();
         return;
     }
 

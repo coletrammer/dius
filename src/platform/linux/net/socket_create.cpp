@@ -5,7 +5,7 @@
 
 namespace dius::net {
 static auto get_socket_flags(OpenFlags open_flags) -> i32 {
-    auto result = SOCK_CLOEXEC;
+    auto result = i32(SOCK_CLOEXEC);
     if (!!(open_flags & OpenFlags::KeepAfterExec)) {
         result &= ~SOCK_CLOEXEC;
     }

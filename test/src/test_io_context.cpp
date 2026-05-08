@@ -5,7 +5,9 @@
 #include "di/test/prelude.h"
 #include "dius/io.h"
 #include "dius/linux/epoll_context.h"
+#include "dius/platform_process.h"
 #include "dius/sync_file.h"
+#include "dius/system/process.h"
 
 namespace io_context {
 namespace ex = di::execution;
@@ -41,9 +43,10 @@ static void cancel() {
 
     auto task = ex::use_resources(
         [&](auto r) {
-            return ex::when_all(dius::read_exactly(r, di::Span { &result, 1 }), ex::schedule(sched) | ex::let_value([] {
-                                                                                    return di::stopped;
-                                                                                }));
+            return ex::when_all(dius::read_exactly(r, di::Span { &result, 1 }),
+                                dius::signalled(sched, dius::Signal::User1), ex::schedule(sched) | ex::let_value([] {
+                                                                                 return di::stopped;
+                                                                             }));
         },
         dius::adopt_file(sched, di::move(rd)));
 
@@ -52,6 +55,26 @@ static void cancel() {
     ASSERT_EQ(result, 0_b);
 }
 
+static void signal() {
+    auto context = *dius::linux::epoll::Context::create();
+    auto sched = context.get_scheduler();
+
+    auto ran = false;
+    auto task = ex::when_all(dius::signalled(sched, dius::Signal::User1) | ex::then([&] {
+                                 ran = true;
+                             }),
+                             ex::schedule(sched) | ex::let_value([&] {
+                                 return ex::schedule(sched) | ex::then([] {
+                                            ASSERT(dius::system::ProcessHandle::self().signal(dius::Signal::User1));
+                                        });
+                             }));
+
+    ASSERT(ex::sync_wait_on(context, di::move(task)));
+
+    ASSERT(ran);
+}
+
 TEST(io_context, read_write)
 TEST(io_context, cancel)
+TEST(io_context, signal)
 }

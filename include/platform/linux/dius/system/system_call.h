@@ -64,6 +64,7 @@ enum class Number : int {
     epoll_pwait2 = __NR_epoll_pwait2,
 #endif
     eventfd2 = __NR_eventfd2,
+    signalfd4 = __NR_signalfd4,
 };
 
 using SystemCallArg = unsigned long;

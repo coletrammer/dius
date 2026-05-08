@@ -150,8 +150,11 @@ private:
     bool m_use_fork { false };
 };
 
-void install_dummy_signal_handler(Signal signal);
-auto mask_signal(Signal signal) -> di::Result<void>;
+auto mask_signal(Signal signal) -> di::Result<>;
+auto unmask_signal(Signal signal) -> di::Result<>;
+auto set_signal_mask(di::Span<Signal> signals) -> di::Result<>;
+auto unmask_all_signals() -> di::Result<>;
+auto mask_all_signals() -> di::Result<>;
 auto wait_for_signal(Signal signal) -> di::Result<Signal>;
 
 /// @brief Get the executed program name (argv[0])

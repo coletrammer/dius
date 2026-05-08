@@ -31,6 +31,8 @@ auto Process::spawn_with_fork() && -> di::Result<ProcessHandle> {
     if (pid == 0) {
         // Any failures will cause the child process to exit with status 127.
         (void) ([&] -> di::Result<> {
+            TRY(unmask_all_signals());
+
             if (m_new_session) {
                 TRY(syscalls::sys_setsid());
             }

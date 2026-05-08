@@ -62,15 +62,55 @@ auto Process::spawn() && -> di::Result<ProcessHandle> {
     return di::move(*this).spawn_with_posix_spawn();
 }
 
-void install_dummy_signal_handler(Signal signal) {
-    (void) ::signal(int(signal), [](int) {});
-}
-
-auto mask_signal(Signal signal) -> di::Result<void> {
+auto mask_signal(Signal signal) -> di::Result<> {
     auto set = sigset_t {};
     sigemptyset(&set);
     sigaddset(&set, int(signal));
     int res = pthread_sigmask(SIG_BLOCK, &set, nullptr);
+    if (res < 0) {
+        return di::Unexpected(di::BasicError(-res));
+    }
+    return {};
+}
+
+auto unmask_signal(Signal signal) -> di::Result<> {
+    auto set = sigset_t {};
+    sigemptyset(&set);
+    sigaddset(&set, int(signal));
+    int res = pthread_sigmask(SIG_UNBLOCK, &set, nullptr);
+    if (res < 0) {
+        return di::Unexpected(di::BasicError(-res));
+    }
+    return {};
+}
+
+auto set_signal_mask(di::Span<Signal> signals) -> di::Result<> {
+    auto set = sigset_t {};
+    sigemptyset(&set);
+    for (auto signal : signals) {
+        sigaddset(&set, int(signal));
+    }
+    int res = pthread_sigmask(SIG_SETMASK, &set, nullptr);
+    if (res < 0) {
+        return di::Unexpected(di::BasicError(-res));
+    }
+    return {};
+}
+
+auto unmask_all_signals() -> di::Result<> {
+    auto set = sigset_t {};
+    sigemptyset(&set);
+    int res = pthread_sigmask(SIG_SETMASK, &set, nullptr);
+    if (res < 0) {
+        return di::Unexpected(di::BasicError(-res));
+    }
+    return {};
+}
+
+auto mask_all_signals() -> di::Result<> {
+    auto set = sigset_t {};
+    sigfillset(&set);
+    int res = pthread_sigmask(SIG_SETMASK, &set, nullptr);
     if (res < 0) {
         return di::Unexpected(di::BasicError(-res));
     }

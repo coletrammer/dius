@@ -247,7 +247,7 @@ auto sys_shutdown(int fd, net::Shutdown mode) -> Result<> {
 }
 
 auto sys_getsockopt(int fd, int level, int optname, void* optval, socklen_t optlen) -> Result<> {
-    TRY(system::system_call<i32>(system::Number::getsoockopt, fd, level, optname, optval, optlen));
+    TRY(system::system_call<i32>(system::Number::getsoockopt, fd, level, optname, optval, &optlen));
     return {};
 }
 }

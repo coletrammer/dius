@@ -30,6 +30,7 @@ auto spawn_thread(PlatformThread& platform_thread) -> di::Result<void> {
                                                                                        sizeof(StackHead));
     stack_data->closure = static_cast<void*>(&platform_thread.entry);
     stack_data->entry = [](StackHead* stack) {
+        (void) system::mask_all_signals();
         auto* as_function = reinterpret_cast<di::Function<void()>*>(stack->closure);
         (*as_function)();
         system::exit_thread();

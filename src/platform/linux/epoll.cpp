@@ -106,10 +106,9 @@ auto Handle::update_interest_list() -> di::Result<> {
                 }
                 op = EPOLL_CTL_MOD;
             }
-            auto event = epoll_event {
-                .events = di::to_underlying(desired_events),
-                .data = u64(fd),
-            };
+            auto event = epoll_event {};
+            event.events = di::to_underlying(desired_events);
+            event.data.u64 = fd;
             TRY(sys_epoll_ctl(m_epoll_fd.file_descriptor(), op, fd, &event));
             m_current_interest_list[fd] = desired_events;
         }

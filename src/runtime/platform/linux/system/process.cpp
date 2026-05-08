@@ -15,9 +15,6 @@ static auto s_envp = static_cast<char**>(nullptr);
     s_envp = envp;
 }
 
-// I'm not sure why this isn't a u128.
-using kernel_sigset_t = u64;
-
 static auto sys_rt_sigprocmask(int how, kernel_sigset_t const* set, kernel_sigset_t* old) -> di::Result<void> {
     return system::system_call<int>(system::Number::rt_sigprocmask, how, set, old, sizeof(kernel_sigset_t)) %
            di::into_void;
@@ -70,11 +67,32 @@ auto Process::spawn() && -> di::Result<ProcessHandle> {
     return di::move(*this).spawn_with_fork();
 }
 
-void install_dummy_signal_handler(Signal) {}
-
-auto mask_signal(Signal signal) -> di::Result<void> {
+auto mask_signal(Signal signal) -> di::Result<> {
     auto mask = kernel_sigset_t(1) << (kernel_sigset_t(signal) - 1);
     return sys_rt_sigprocmask(SIG_BLOCK, &mask, nullptr);
+}
+
+auto unmask_signal(Signal signal) -> di::Result<> {
+    auto mask = kernel_sigset_t(1) << (kernel_sigset_t(signal) - 1);
+    return sys_rt_sigprocmask(SIG_UNBLOCK, &mask, nullptr);
+}
+
+auto set_signal_mask(di::Span<Signal> signals) -> di::Result<> {
+    auto mask = kernel_sigset_t(0);
+    for (auto signal : signals) {
+        mask |= kernel_sigset_t(1) << (kernel_sigset_t(signal) - 1);
+    }
+    return sys_rt_sigprocmask(SIG_SETMASK, &mask, nullptr);
+}
+
+auto unmask_all_signals() -> di::Result<> {
+    auto mask = kernel_sigset_t(-1);
+    return sys_rt_sigprocmask(SIG_SETMASK, &mask, nullptr);
+}
+
+auto mask_all_signals() -> di::Result<> {
+    auto mask = kernel_sigset_t(0);
+    return sys_rt_sigprocmask(SIG_SETMASK, &mask, nullptr);
 }
 
 auto wait_for_signal(Signal signal) -> di::Result<Signal> {
