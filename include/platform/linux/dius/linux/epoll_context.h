@@ -2,6 +2,7 @@
 
 #include "di/container/intrusive/atomic_batch_queue.h"
 #include "di/execution/interface/schedule.h"
+#include "di/execution/interface/timed_scheduler.h"
 #include "di/execution/receiver/prelude.h"
 #include "di/execution/types/completion_signuatures.h"
 #include "di/execution/util/resource_helper.h"
@@ -14,6 +15,7 @@
 #include "dius/net/socket.h"
 #include "dius/platform_error.h"
 #include "dius/platform_process.h"
+#include "dius/steady_clock.h"
 #include "dius/sync_file.h"
 
 namespace dius::linux::epoll {
@@ -49,6 +51,15 @@ struct SignalOperationBase : OperationBase {
     virtual void terminate() = 0;
 };
 
+struct TimeoutOperationBase : OperationBase {
+    SteadyClock::TimePoint deadline {};
+
+    explicit TimeoutOperationBase(SteadyClock::TimePoint deadline) : deadline(deadline) {}
+
+    virtual void notify() = 0;
+    virtual void terminate() = 0;
+};
+
 class Scheduler {
 public:
     Context* context { nullptr };
@@ -77,13 +88,16 @@ public:
     auto try_start(OperationBase&) -> bool;
     void add_waiter(WaitableOperationBase&);
     void add_waiter(SignalOperationBase&);
+    void add_waiter(TimeoutOperationBase&);
     void cancel(WaitableOperationBase&);
     void cancel(SignalOperationBase&);
+    void cancel(TimeoutOperationBase&);
     void wake();
 
 private:
     void dispatch_event(i32 fd, EventType events);
     void dispatch_signal();
+    void process_timeouts();
 
     Handle m_epoll_handle;
     Eventfd m_eventfd;
@@ -93,6 +107,7 @@ private:
     di::IntrusiveAtomicBatchQueue<OperationBase> m_queued_operations;
     di::TreeMap<i32, di::IntrusiveForwardList<WaitableOperationBase>> m_waiting_operations;
     di::TreeMap<Signal, di::IntrusiveForwardList<SignalOperationBase>> m_signal_operations;
+    di::IntrusiveForwardList<TimeoutOperationBase> m_timeout_operations;
     bool m_signal_set_changed { false };
 };
 
@@ -617,6 +632,29 @@ struct SignalledSender : SenderBase<SignalledSender> {
     }
 };
 
+struct TimeoutSender : SenderBase<TimeoutSender> {
+    using Base = SenderBase<TimeoutSender>;
+
+    explicit TimeoutSender(Context* context, SteadyClock::TimePoint deadline) : Base(context), deadline(deadline) {}
+
+    SteadyClock::TimePoint deadline {};
+
+    template<typename Rec>
+    struct Op : WaitableOperationImplBase<Op<Rec>, Rec, TimeoutOperationBase, di::Void> {
+        using Base = WaitableOperationImplBase<Op<Rec>, Rec, TimeoutOperationBase, di::Void>;
+
+        Op(Context* context, SteadyClock::TimePoint deadline, Rec&& receiver)
+            : Base(context, di::move(receiver), deadline) {}
+
+        auto do_notify() -> di::Void { return {}; }
+    };
+
+    template<di::ReceiverOf<Base::CompletionSignatures> Rec>
+    friend auto tag_invoke(di::Tag<ex::connect>, TimeoutSender self, Rec receiver) {
+        return Op<Rec> { self.context, self.deadline, di::move(receiver) };
+    }
+};
+
 struct OpenSender : SenderBase<OpenSender, FileToken> {
     using Base = SenderBase<OpenSender, FileToken>;
 
@@ -766,5 +804,13 @@ inline auto tag_invoke(di::Tag<accept>, SocketToken const& token, OpenFlags open
 
 inline auto tag_invoke(di::Tag<signalled>, Scheduler self, Signal signal) {
     return SignalledSender(self.context, signal);
+}
+
+inline auto tag_invoke(di::Tag<ex::now>, Scheduler) -> SteadyClock::TimePoint {
+    return SteadyClock::now();
+}
+
+inline auto tag_invoke(di::Tag<ex::schedule_at>, Scheduler self, SteadyClock::TimePoint deadline) {
+    return TimeoutSender(self.context, deadline);
 }
 }

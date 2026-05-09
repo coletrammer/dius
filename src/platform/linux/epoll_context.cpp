@@ -1,6 +1,7 @@
 #include "dius/linux/epoll_context.h"
 
 #include "di/assert/prelude.h"
+#include "di/container/algorithm/lower_bound.h"
 #include "di/util/defer_construct.h"
 #include "dius/linux/epoll.h"
 #include "dius/linux/eventfd.h"
@@ -47,13 +48,19 @@ void Context::run() {
         }
 
         auto events = di::Array<epoll_event, max_event_count> {};
-        auto result = m_epoll_handle.wait(events.span(), {});
+        auto const now = SteadyClock::now();
+        auto timeout = m_timeout_operations.front().transform([&](TimeoutOperationBase& op) -> SteadyClock::Duration {
+            auto duration = op.deadline - now;
+            return di::max(duration, SteadyClock::Duration::zero());
+        });
+        auto result = m_epoll_handle.wait(events.span(), timeout);
         ASSERT(result);
 
         m_need_wake.store(false, di::MemoryOrder::Release);
         for (auto const& event : result.value()) {
             dispatch_event(i32(event.data.u64), EventType(event.events));
         }
+        process_timeouts();
     }
 
     // Execute all currently pending operations. No new operations can be queued.
@@ -73,6 +80,9 @@ void Context::run() {
             op.value().terminate();
         }
     }
+    while (auto op = m_timeout_operations.pop_front()) {
+        op.value().terminate();
+    }
 }
 
 void Context::finish() {
@@ -80,6 +90,7 @@ void Context::finish() {
     auto expected = 0;
     while (!m_staring_operations.compare_exchange_weak(expected, -1, di::MemoryOrder::AcquireRelease,
                                                        di::MemoryOrder::Relaxed)) {
+        ASSERT_NOT_EQ(expected, -1);
         expected = 0;
     }
 
@@ -123,6 +134,19 @@ void Context::add_waiter(SignalOperationBase& op) {
     m_signal_set_changed = true;
 }
 
+void Context::add_waiter(TimeoutOperationBase& op) {
+    // Its more efficient to use an intrusive heap here, but its some work
+    // to implement and is only necessary for large number of timeouts.
+    auto it = m_timeout_operations.before_begin();
+    while (it != m_timeout_operations.before_end()) {
+        auto next = di::next(it);
+        if (op.deadline < next->deadline) {
+            break;
+        }
+    }
+    m_timeout_operations.insert_after(it, op);
+}
+
 void Context::cancel(WaitableOperationBase& op) {
     auto const fd = op.fd;
     auto outer_it = m_waiting_operations.find(fd);
@@ -159,20 +183,21 @@ void Context::cancel(SignalOperationBase& op) {
 
     // Erase the signal operation.
     auto& waiting_ops = outer_it->get<1>();
-    for (auto it = waiting_ops.before_begin(); it != waiting_ops.before_end();) {
-        auto& current = *di::next(it);
-        if (&op == &current) {
-            waiting_ops.erase_after(it);
-        } else {
-            ++it;
-        }
-    }
+    di::erase_if(waiting_ops, [&](SignalOperationBase const& other) {
+        return &op == &other;
+    });
 
     // Clean up the waiting operations entry if possible.
     if (waiting_ops.empty()) {
         m_signal_operations.erase(outer_it);
         m_signal_set_changed = true;
     }
+}
+
+void Context::cancel(TimeoutOperationBase& op) {
+    di::erase_if(m_timeout_operations, [&](TimeoutOperationBase const& other) {
+        return &op == &other;
+    });
 }
 
 void Context::wake() {
@@ -249,6 +274,18 @@ void Context::dispatch_event(i32 fd, EventType events) {
     // Clean up the waiting operations entry if possible.
     if (waiting_ops.empty()) {
         m_waiting_operations.erase(outer_it);
+    }
+}
+
+void Context::process_timeouts() {
+    auto const now = SteadyClock::now();
+    while (auto op = m_timeout_operations.front()) {
+        if (op.value().deadline <= now) {
+            m_timeout_operations.pop_front();
+            op.value().notify();
+            continue;
+        }
+        break;
     }
 }
 }

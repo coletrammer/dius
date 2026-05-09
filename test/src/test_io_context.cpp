@@ -6,6 +6,7 @@
 #include "dius/io.h"
 #include "dius/linux/epoll_context.h"
 #include "dius/platform_process.h"
+#include "dius/steady_clock.h"
 #include "dius/sync_file.h"
 #include "dius/system/process.h"
 
@@ -43,7 +44,7 @@ static void cancel() {
 
     auto task = ex::use_resources(
         [&](auto r) {
-            return ex::when_all(dius::read_exactly(r, di::Span { &result, 1 }),
+            return ex::when_all(dius::read_exactly(r, di::Span { &result, 1 }), ex::schedule_after(sched, 10_s),
                                 dius::signalled(sched, dius::Signal::User1), ex::schedule(sched) | ex::let_value([] {
                                                                                  return di::stopped;
                                                                              }));
@@ -74,7 +75,38 @@ static void signal() {
     ASSERT(ran);
 }
 
+static void timed() {
+    {
+        auto context = *dius::linux::epoll::Context::create();
+        auto sched = context.get_scheduler();
+
+        auto start = dius::SteadyClock::now();
+        auto ran_at = start;
+        auto task = di::execution::schedule_at(sched, start + 10_ms) | ex::then([&] {
+                        ran_at = dius::SteadyClock::now();
+                    });
+
+        ASSERT(ex::sync_wait_on(context, di::move(task)));
+        ASSERT_GT_EQ(ran_at, start + 10_ms);
+    }
+
+    {
+        auto context = *dius::linux::epoll::Context::create();
+        auto sched = context.get_scheduler();
+
+        auto start = dius::SteadyClock::now();
+        auto ran_at = start;
+        auto task = di::execution::schedule_after(sched, 10_ms) | ex::then([&] {
+                        ran_at = dius::SteadyClock::now();
+                    });
+
+        ASSERT(ex::sync_wait_on(context, di::move(task)));
+        ASSERT_GT_EQ(ran_at, start + 10_ms);
+    }
+}
+
 TEST(io_context, read_write)
 TEST(io_context, cancel)
 TEST(io_context, signal)
+TEST(io_context, timed)
 }
