@@ -20,7 +20,7 @@ auto sys_pwrite(int fd, u64 offset, di::Span<byte const> data) -> Result<usize> 
 }
 
 auto sys_dup2(int old_fd, int new_fd) -> Result<> {
-    return system::system_call<int>(system::Number::dup2, old_fd, new_fd) % di::into_void;
+    return system::system_call<int>(system::Number::dup3, old_fd, new_fd, 0) % di::into_void;
 }
 
 auto sys_close(int fd) -> Result<> {
@@ -123,7 +123,7 @@ auto sys_mknod(di::PathView path, u32 type, u32 perms) -> Result<> {
     di::copy(raw_data, null_terminated_string);
     null_terminated_string[raw_data.size()] = '\0';
 
-    return system::system_call<int>(system::Number::mknodat, AT_FDCWD, null_terminated_string, perms | u32(type), 0) %
+    return system::system_call<int>(system::Number::mknodat, AT_FDCWD, null_terminated_string, perms | type, 0) %
            di::into_void;
 }
 
@@ -150,7 +150,8 @@ auto sys_rmdir(di::PathView path) -> Result<> {
     di::copy(raw_data, null_terminated_string);
     null_terminated_string[raw_data.size()] = '\0';
 
-    return system::system_call<int>(system::Number::rmdir, null_terminated_string) % di::into_void;
+    return system::system_call<int>(system::Number::unlinkat, AT_FDCWD, null_terminated_string, AT_REMOVEDIR) %
+           di::into_void;
 }
 
 auto sys_unlink(di::PathView path) -> Result<> {
@@ -163,7 +164,7 @@ auto sys_unlink(di::PathView path) -> Result<> {
     di::copy(raw_data, null_terminated_string);
     null_terminated_string[raw_data.size()] = '\0';
 
-    return system::system_call<int>(system::Number::unlink, null_terminated_string) % di::into_void;
+    return system::system_call<int>(system::Number::unlinkat, AT_FDCWD, null_terminated_string, 0) % di::into_void;
 }
 
 auto sys_fchdir(i32 fd) -> Result<> {

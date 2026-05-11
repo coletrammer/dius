@@ -15,10 +15,10 @@ static auto sys_epoll_ctl(i32 epoll_fd, i32 op, i32 fd, epoll_event* event = nul
     return system::system_call<i32>(system::Number::epoll_ctl, epoll_fd, op, fd, event) % di::into_void;
 }
 
-static auto sys_epoll_wait(i32 epoll_fd, di::Span<epoll_event> events, i32 timeout = -1)
+static auto sys_epoll_pwait(i32 epoll_fd, di::Span<epoll_event> events, i32 timeout = -1, void* sigmask = nullptr)
     -> di::Result<di::Span<epoll_event>> {
-    auto count =
-        TRY(system::system_call<i32>(system::Number::epoll_wait, epoll_fd, events.data(), i32(events.size()), timeout));
+    auto count = TRY(system::system_call<i32>(system::Number::epoll_pwait, epoll_fd, events.data(), i32(events.size()),
+                                              timeout, sigmask));
     return *events.first(count);
 }
 
@@ -72,7 +72,7 @@ auto Handle::wait(di::Span<epoll_event> events, di::Optional<SteadyClock::Durati
                     return di::representable_as<i32>(as_millis) ? di::Optional(as_millis) : di::nullopt;
                 })
                 .value_or(-1);
-        return sys_epoll_wait(m_epoll_fd.file_descriptor(), events, timeout_ms);
+        return sys_epoll_pwait(m_epoll_fd.file_descriptor(), events, timeout_ms);
     }
 
     auto timespec_storage = timespec {};
