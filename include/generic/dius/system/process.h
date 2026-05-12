@@ -8,50 +8,11 @@
 #include "di/util/prelude.h"
 #include "dius/error.h"
 #include "dius/platform_process.h"
+#include "dius/platform_process_handle.h"
 #include "dius/sync_file.h"
 #include "dius/tty.h"
 
 namespace dius::system {
-class ProcessResult {
-public:
-    explicit ProcessResult(int exit_code_or_signal, bool signaled)
-        : m_exit_code_or_signal(exit_code_or_signal), m_signaled(signaled) {}
-
-    auto signaled() const -> bool { return m_signaled; }
-    auto exited() const -> bool { return !m_signaled; }
-
-    auto exit_code() const -> int {
-        ASSERT(exited());
-        return m_exit_code_or_signal;
-    }
-
-    auto signal() const -> int {
-        ASSERT(signaled());
-        return m_exit_code_or_signal;
-    }
-
-private:
-    int m_exit_code_or_signal { 0 };
-    bool m_signaled { false };
-};
-
-class ProcessHandle {
-public:
-    static auto self() -> ProcessHandle;
-
-    ProcessHandle() = default;
-    constexpr explicit ProcessHandle(ProcessId id) : m_id(id) {}
-
-    constexpr auto id() const -> ProcessId { return m_id; }
-
-    auto wait() -> di::Result<ProcessResult>;
-
-    auto signal(Signal signal) -> di::Result<>;
-
-private:
-    ProcessId m_id { -1 };
-};
-
 class Process {
     struct FileAction {
         enum class Type {
@@ -132,7 +93,7 @@ public:
 
     auto spawn_and_wait() && -> di::Result<ProcessResult> {
         auto handle = TRY(di::move(*this).spawn());
-        return handle.wait();
+        return handle.sync_wait();
     }
 
 private:

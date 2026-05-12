@@ -28,6 +28,7 @@ enum class Number : int {
     clone3 = __NR_clone3,
     execve = __NR_execve,
     wait4 = __NR_wait4,
+    waitid = __NR_waitid,
     exit = __NR_exit,
     futex = __NR_futex,
     lseek = __NR_lseek,
@@ -65,6 +66,14 @@ enum class Number : int {
 #endif
     eventfd2 = __NR_eventfd2,
     signalfd4 = __NR_signalfd4,
+#ifdef __NR_pidfd_open
+#define DIUS_PIDFD_OPEN
+    pidfd_open = __NR_pidfd_open,
+#endif
+#ifdef __NR_pidfd_send_signal
+#define DIUS_PIDFD_SEND_SIGNAL
+    pidfd_send_signal = __NR_pidfd_send_signal,
+#endif
 };
 
 using SystemCallArg = unsigned long;

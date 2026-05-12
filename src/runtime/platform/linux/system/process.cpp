@@ -24,45 +24,6 @@ static auto sys_rt_sigtimedwait(kernel_sigset_t const* set, void* info, void* ti
     return system::system_call<Signal>(system::Number::rt_sigtimedwait, set, info, timeout, sizeof(kernel_sigset_t));
 }
 
-static auto sys_kill(ProcessId id, int signal) -> di::Result<void> {
-    return system::system_call<int>(system::Number::kill, id, signal) % di::into_void;
-}
-
-static auto sys_getpid() -> di::Result<ProcessId> {
-    return system::system_call<ProcessId>(system::Number::getpid);
-}
-
-auto ProcessHandle::self() -> ProcessHandle {
-    // This really shouldn't fail...
-    return ProcessHandle(sys_getpid().value());
-}
-
-auto ProcessHandle::wait() -> di::Result<ProcessResult> {
-    if (id() == -1) {
-        return di::Unexpected(di::BasicError::NoSuchProcess);
-    }
-
-    int status;
-    TRY(system_call<ProcessId>(Number::wait4, id(), &status, 0, nullptr));
-
-    // NOTE: Linux's wait.h header does not define WIFEXITED, WEXITSTATUS, WIFSIGNALED, and WTERMSIG, so it is done
-    //       manually here. In the future, it would be nice to take these definitions from libccpp's headers.
-    auto const signal = (status & 0x7F);
-    if (signal == 0) {
-        // Exited.
-        return ProcessResult { (status & 0xFF00) >> 8, false };
-    }
-    // Signaled.
-    return ProcessResult { (status & 0x7F), true };
-}
-
-auto ProcessHandle::signal(Signal signal) -> di::Result<> {
-    if (id() == -1) {
-        return di::Unexpected(di::BasicError::NoSuchProcess);
-    }
-    return sys_kill(id(), int(signal));
-}
-
 auto Process::spawn() && -> di::Result<ProcessHandle> {
     return di::move(*this).spawn_with_fork();
 }

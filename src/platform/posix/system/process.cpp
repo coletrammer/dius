@@ -21,38 +21,6 @@
 #include "dius/sync_file.h"
 
 namespace dius::system {
-auto ProcessHandle::self() -> ProcessHandle {
-    return ProcessHandle(getpid());
-}
-
-auto ProcessHandle::wait() -> di::Result<ProcessResult> {
-    if (id() == -1) {
-        return di::Unexpected(di::BasicError::NoSuchProcess);
-    }
-
-    auto status = 0;
-    auto wait_result = waitpid(id(), &status, 0);
-    if (wait_result == -1) {
-        return di::Unexpected(di::BasicError(errno));
-    }
-    if (WIFEXITED(status)) {
-        return ProcessResult { WEXITSTATUS(status), false };
-    }
-    return ProcessResult { WTERMSIG(status), true };
-}
-
-auto ProcessHandle::signal(Signal signal) -> di::Result<> {
-    if (id() == -1) {
-        return di::Unexpected(di::BasicError::NoSuchProcess);
-    }
-
-    auto res = kill(id(), int(signal));
-    if (res < 0) {
-        return di::Unexpected(di::BasicError(errno));
-    }
-    return {};
-}
-
 auto Process::spawn() && -> di::Result<ProcessHandle> {
     // Using fork() is necessary under certain cases because certain actions aren't doable via posix_spawn().
     // Namely, calling ioctl(TIOCSCTTY), to set the controlling terminal of a process.
