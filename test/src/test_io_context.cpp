@@ -1,6 +1,7 @@
 #include "di/execution/algorithm/sync_wait.h"
 #include "di/execution/algorithm/use_resources.h"
 #include "di/execution/algorithm/when_all.h"
+#include "di/execution/algorithm/with_env.h"
 #include "di/execution/coroutine/lazy.h"
 #include "di/test/prelude.h"
 #include "dius/io.h"
@@ -105,8 +106,36 @@ static void timed() {
     }
 }
 
+static void wait() {
+#ifdef __linux__
+    constexpr auto N = 2u;
+#else
+    constexpr auto N = 1u;
+#endif
+    for (auto i : di::range(N)) {
+        auto context = *dius::linux::epoll::Context::create();
+        auto sched = context.get_scheduler();
+
+        auto process = dius::system::Process(di::Array { "sh"_ts, "-c"_ts, "sleep 0.5 && exit 1"_ts } | di::as_rvalue |
+                                             di::to<di::Vector>())
+                           .spawn();
+        ASSERT(process);
+
+#ifdef __linux__
+        if (i == 1) {
+            process.value().internal_clear_pidfd();
+        }
+#endif
+
+        auto task = ex::with_debug_env(dius::wait(sched, di::move(process).value()));
+        auto expected = dius::system::ProcessResult(1, false);
+        ASSERT_EQ(ex::sync_wait_on(context, di::move(task)), expected);
+    }
+}
+
 TEST(io_context, read_write)
 TEST(io_context, cancel)
 TEST(io_context, signal)
 TEST(io_context, timed)
+TEST(io_context, wait)
 }

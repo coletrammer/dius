@@ -11,7 +11,7 @@ class Pidfd
 public:
     constexpr explicit Pidfd(Owned owned, int fd) : SyncFile(owned, fd) {}
 
-    auto sync_wait() const -> di::Result<system::ProcessResult>;
+    auto sync_wait(bool nonblocking = false) const -> di::Result<system::ProcessResult>;
 
     auto signal(Signal signal) const -> di::Result<>;
 };

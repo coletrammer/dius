@@ -27,14 +27,15 @@ auto ProcessHandle::self() -> ProcessHandle {
     return ProcessHandle(di::in_place, sys_getpid().value());
 }
 
-auto ProcessHandle::sync_wait() -> di::Result<ProcessResult> {
+auto ProcessHandle::sync_wait(bool nonblocking) -> di::Result<ProcessResult> {
     if (id() == -1) {
         return di::Unexpected(di::BasicError::NoSuchProcess);
     }
 
+    auto flags = nonblocking ? WNOHANG : 0;
     if (m_pidfd) {
         // On ENOSYS or ECHILD just try the fallback path.
-        auto result = m_pidfd->sync_wait();
+        auto result = m_pidfd->sync_wait(nonblocking);
         if (result != di::Unexpected(PosixError::FunctionNotSupported) &&
             result != di::Unexpected(PosixError::NoChildProcess)) {
             return result;
@@ -42,7 +43,10 @@ auto ProcessHandle::sync_wait() -> di::Result<ProcessResult> {
     }
 
     int status;
-    TRY(system_call<ProcessId>(Number::wait4, id(), &status, 0, nullptr));
+    auto result = TRY(system_call<ProcessId>(Number::wait4, id(), &status, flags, nullptr));
+    if (result == 0) {
+        return di::Unexpected(PosixError::ResourceUnavailableTryAgain);
+    }
 
     // NOTE: Linux's wait.h header does not define WIFEXITED, WEXITSTATUS, WIFSIGNALED, and WTERMSIG, so it is done
     //       manually here. In the future, it would be nice to take these definitions from libccpp's headers.

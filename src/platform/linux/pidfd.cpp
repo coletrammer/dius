@@ -10,10 +10,14 @@ namespace dius::linux {
 constexpr inline auto P_PIDFD = 3;
 #endif
 
-auto Pidfd::sync_wait() const -> di::Result<system::ProcessResult> {
+auto Pidfd::sync_wait(bool nonblocking) const -> di::Result<system::ProcessResult> {
     auto siginfo = siginfo_t {};
-    TRY(system::system_call<i32>(system::Number::waitid, P_PIDFD, file_descriptor(), &siginfo, WEXITED, nullptr));
+    auto flags = WEXITED | (nonblocking ? WNOHANG : 0);
+    TRY(system::system_call<i32>(system::Number::waitid, P_PIDFD, file_descriptor(), &siginfo, flags, nullptr));
 
+    if (siginfo.si_pid == 0) {
+        return di::Unexpected(PosixError::ResourceUnavailableTryAgain);
+    }
     auto const signalled = siginfo.si_code != CLD_EXITED;
     return system::ProcessResult { siginfo.si_status, signalled };
 }

@@ -1,11 +1,14 @@
 #pragma once
 
 #include "di/container/intrusive/atomic_batch_queue.h"
+#include "di/execution/coroutine/lazy.h"
 #include "di/execution/interface/schedule.h"
 #include "di/execution/interface/timed_scheduler.h"
+#include "di/execution/macro/co_try.h"
 #include "di/execution/receiver/prelude.h"
 #include "di/execution/types/completion_signuatures.h"
 #include "di/execution/util/resource_helper.h"
+#include "di/execution/util/variant_sender.h"
 #include "di/function/make_deferred.h"
 #include "dius/io.h"
 #include "dius/linux/epoll.h"
@@ -15,8 +18,10 @@
 #include "dius/net/socket.h"
 #include "dius/platform_error.h"
 #include "dius/platform_process.h"
+#include "dius/platform_process_handle.h"
 #include "dius/steady_clock.h"
 #include "dius/sync_file.h"
+#include "dius/system/process_result.h"
 
 namespace dius::linux::epoll {
 namespace ex = di::execution;
@@ -397,6 +402,32 @@ struct WriteSomeSender : SenderBase<WriteSomeSender, usize> {
     template<di::ReceiverOf<Base::CompletionSignatures> Rec>
     friend auto tag_invoke(di::Tag<ex::connect>, WriteSomeSender self, Rec receiver) {
         return Op<Rec> { self.context, self.fd, di::move(self.args), di::move(receiver) };
+    }
+};
+
+struct PidfdWaitSender : SenderBase<PidfdWaitSender, system::ProcessResult> {
+    using Base = SenderBase<PidfdWaitSender, system::ProcessResult>;
+
+    explicit PidfdWaitSender(Context* context, system::ProcessHandle process)
+        : Base(context), process(di::move(process)) {}
+
+    system::ProcessHandle process;
+
+    template<typename Rec>
+    struct Op : WaitableOperationImplBase<Op<Rec>, Rec, WaitableOperationBase, di::Result<system::ProcessResult>> {
+        using Base = WaitableOperationImplBase<Op, Rec, WaitableOperationBase, di::Result<system::ProcessResult>>;
+
+        system::ProcessHandle process;
+
+        Op(Context* context, system::ProcessHandle process, Rec&& receiver)
+            : Base(context, di::move(receiver), process.pidfd(), EventType::Read), process(di::move(process)) {}
+
+        auto do_notify() -> di::Result<system::ProcessResult> { return process.sync_wait(); }
+    };
+
+    template<di::ReceiverOf<Base::CompletionSignatures> Rec>
+    friend auto tag_invoke(di::Tag<ex::connect>, PidfdWaitSender self, Rec receiver) {
+        return Op<Rec> { self.context, di::move(self.process), di::move(receiver) };
     }
 };
 
@@ -812,5 +843,26 @@ inline auto tag_invoke(di::Tag<ex::now>, Scheduler) -> SteadyClock::TimePoint {
 
 inline auto tag_invoke(di::Tag<ex::schedule_at>, Scheduler self, SteadyClock::TimePoint deadline) {
     return TimeoutSender(self.context, deadline);
+}
+
+inline auto sigchild_waiter(Scheduler self, system::ProcessHandle process) -> di::Lazy<system::ProcessResult> {
+    for (;;) {
+        auto result = process.sync_wait(true);
+        if (result == di::Unexpected(PosixError::ResourceUnavailableTryAgain)) {
+            co_await SignalledSender(self.context, Signal::Child);
+            continue;
+        }
+        co_return CO_TRY(di::move(result));
+    }
+}
+
+using SigchildWaitSender = decltype(sigchild_waiter(di::declval<Scheduler>(), di::declval<system::ProcessHandle>()));
+
+inline auto tag_invoke(di::Tag<wait>, Scheduler self, system::ProcessHandle process)
+    -> di::execution::VariantSender<SigchildWaitSender, PidfdWaitSender> {
+    if (process.pidfd() == -1) {
+        return sigchild_waiter(self, di::move(process));
+    }
+    return PidfdWaitSender(self.context, di::move(process));
 }
 }

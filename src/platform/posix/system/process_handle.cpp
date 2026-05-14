@@ -11,15 +11,18 @@ auto ProcessHandle::self() -> ProcessHandle {
     return ProcessHandle(getpid());
 }
 
-auto ProcessHandle::sync_wait() -> di::Result<ProcessResult> {
+auto ProcessHandle::sync_wait(bool nonblocking) -> di::Result<ProcessResult> {
     if (id() == -1) {
         return di::Unexpected(di::BasicError::NoSuchProcess);
     }
 
     auto status = 0;
-    auto wait_result = waitpid(id(), &status, 0);
+    auto wait_result = waitpid(id(), &status, nonblocking ? WNOHANG : 0);
     if (wait_result == -1) {
         return di::Unexpected(di::BasicError(errno));
+    }
+    if (wait_result == 0) {
+        return di::Unexpected(PosixError::ResourceUnavailableTryAgain);
     }
     if (WIFEXITED(status)) {
         return ProcessResult { WEXITSTATUS(status), false };

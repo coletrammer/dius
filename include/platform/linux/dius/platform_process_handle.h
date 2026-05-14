@@ -15,12 +15,19 @@ public:
 
     constexpr auto id() const -> ProcessId { return m_id; }
 
-    auto sync_wait() -> di::Result<ProcessResult>;
+    auto sync_wait(bool nonblocking = false) -> di::Result<ProcessResult>;
 
     auto signal(Signal signal) -> di::Result<>;
 
     // Used for testing the fallback case.
     void internal_clear_pidfd() { m_pidfd = {}; }
+
+    auto pidfd() const -> i32 {
+        if (m_pidfd) {
+            return m_pidfd->file_descriptor();
+        }
+        return -1;
+    }
 
 private:
     constexpr explicit ProcessHandle(di::InPlace, ProcessId id) : m_id(id) {}

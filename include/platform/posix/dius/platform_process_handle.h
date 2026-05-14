@@ -15,7 +15,7 @@ public:
 
     constexpr auto id() const -> ProcessId { return m_id; }
 
-    auto sync_wait() -> di::Result<ProcessResult>;
+    auto sync_wait(bool nonblocking = false) -> di::Result<ProcessResult>;
 
     auto signal(Signal signal) -> di::Result<>;
 

@@ -8,6 +8,7 @@
 #include "dius/net/address.h"
 #include "dius/net/socket.h"
 #include "dius/platform_process.h"
+#include "dius/platform_process_handle.h"
 #include "dius/sync_file.h"
 
 namespace dius {
@@ -188,4 +189,18 @@ namespace signalled_ns {
 }
 
 constexpr inline auto signalled = signalled_ns::Function {};
+
+namespace wait_ns {
+    struct Function {
+        template<di::concepts::Scheduler Sched>
+        requires(di::concepts::TagInvocable<Function, Sched, system::ProcessHandle>)
+        static auto operator()(Sched&& sched, system::ProcessHandle process) {
+            static_assert(di::concepts::Sender<di::meta::TagInvokeResult<Function, Sched, system::ProcessHandle>>,
+                          "dius::wait() customizations must return a sender");
+            return tag_invoke(Function {}, di::forward<Sched>(sched), process);
+        }
+    };
+}
+
+constexpr inline auto wait = wait_ns::Function {};
 }
