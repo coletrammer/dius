@@ -28,6 +28,9 @@
 #if __has_include(<sys/signalfd.h>)
 #include <sys/signalfd.h>
 #endif
+#if __has_include(<sys/inotify.h>)
+#include <sys/inotify.h>
+#endif
 
 namespace dius::syscalls {
 using Stat = struct ::stat;

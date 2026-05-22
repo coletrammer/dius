@@ -197,10 +197,24 @@ namespace wait_ns {
         static auto operator()(Sched&& sched, system::ProcessHandle process) {
             static_assert(di::concepts::Sender<di::meta::TagInvokeResult<Function, Sched, system::ProcessHandle>>,
                           "dius::wait() customizations must return a sender");
-            return tag_invoke(Function {}, di::forward<Sched>(sched), process);
+            return tag_invoke(Function {}, di::forward<Sched>(sched), di::move(process));
         }
     };
 }
 
 constexpr inline auto wait = wait_ns::Function {};
+
+namespace modified_ns {
+    struct Function {
+        template<di::concepts::Scheduler Sched>
+        requires(di::concepts::TagInvocable<Function, Sched, di::Path>)
+        static auto operator()(Sched&& sched, di::Path path) {
+            static_assert(di::concepts::Sender<di::meta::TagInvokeResult<Function, Sched, di::Path>>,
+                          "dius::modified() customizations must return a sender");
+            return tag_invoke(Function {}, di::forward<Sched>(sched), di::move(path));
+        }
+    };
+}
+
+constexpr inline auto modified = modified_ns::Function {};
 }

@@ -13,6 +13,7 @@
 #include "dius/io.h"
 #include "dius/linux/epoll.h"
 #include "dius/linux/eventfd.h"
+#include "dius/linux/inotify.h"
 #include "dius/linux/signalfd.h"
 #include "dius/net/address.h"
 #include "dius/net/socket.h"
@@ -65,6 +66,18 @@ struct TimeoutOperationBase : OperationBase {
     virtual void terminate() = 0;
 };
 
+struct InotifyOperationBase : OperationBase {
+    di::Path path;
+    Inotify::EventType events { Inotify::EventType::None };
+    i32 token { -1 };
+    di::Error error { PosixError::Success };
+
+    explicit InotifyOperationBase(di::Path path, Inotify::EventType events) : path(di::move(path)), events(events) {}
+
+    virtual void notify() = 0;
+    virtual void terminate() = 0;
+};
+
 class Scheduler {
 public:
     Context* context { nullptr };
@@ -79,12 +92,13 @@ class Context {
 public:
     static auto create() -> di::Result<Context>;
 
-    explicit Context(Handle epoll_handle, Eventfd eventfd, Signalfd signalfd);
+    explicit Context(Handle epoll_handle, Eventfd eventfd, Signalfd signalfd, Inotify inotify);
 
     Context(Context&& other)
         : m_epoll_handle(di::move(other.m_epoll_handle))
         , m_eventfd(di::move(other.m_eventfd))
-        , m_signalfd(di::move(other.m_signalfd)) {}
+        , m_signalfd(di::move(other.m_signalfd))
+        , m_inotify(di::move(other.m_inotify)) {}
 
     auto get_scheduler() -> Scheduler { return Scheduler(this); }
     void run();
@@ -94,25 +108,36 @@ public:
     void add_waiter(WaitableOperationBase&);
     void add_waiter(SignalOperationBase&);
     void add_waiter(TimeoutOperationBase&);
+    void add_waiter(InotifyOperationBase&);
     void cancel(WaitableOperationBase&);
     void cancel(SignalOperationBase&);
     void cancel(TimeoutOperationBase&);
+    void cancel(InotifyOperationBase&);
     void wake();
 
 private:
+    void update_inotify(i32 token, Inotify::EventType new_events,
+                        di::TreeMap<i32, di::IntrusiveForwardList<InotifyOperationBase>>::Iterator outer_it);
+
     void dispatch_event(i32 fd, EventType events);
     void dispatch_signal();
     void process_timeouts();
+    void dispatch_inotify(Inotify::Event const& event);
 
     Handle m_epoll_handle;
     Eventfd m_eventfd;
     Signalfd m_signalfd;
+    Inotify m_inotify;
     di::Atomic<i32> m_staring_operations { 0 };
     di::Atomic<bool> m_need_wake { false };
     di::IntrusiveAtomicBatchQueue<OperationBase> m_queued_operations;
     di::TreeMap<i32, di::IntrusiveForwardList<WaitableOperationBase>> m_waiting_operations;
     di::TreeMap<Signal, di::IntrusiveForwardList<SignalOperationBase>> m_signal_operations;
     di::IntrusiveForwardList<TimeoutOperationBase> m_timeout_operations;
+    di::TreeMap<i32, di::IntrusiveForwardList<InotifyOperationBase>> m_inotify_waiters;
+    di::TreeMap<di::Path, i32> m_inotify_tokens;
+    di::TreeMap<i32, di::Path> m_inotify_paths;
+    di::TreeMap<i32, Inotify::EventType> m_inotify_state;
     bool m_signal_set_changed { false };
 };
 
@@ -196,7 +221,7 @@ struct WaitableOperationStopCallbackFunction {
     void operator()() const noexcept { outer->try_cancel(); }
 };
 
-template<typename Self, typename Rec, typename Base, typename T>
+template<typename Self, typename Rec, typename Base, typename T, bool has_notify_error = false>
 struct WaitableOperationImplBase : Base {
     using StopCallback = WaitableOperationStopCallbackFunction<WaitableOperationImplBase>;
     using StopToken = di::meta::StopTokenOf<di::meta::EnvOf<Rec>>;
@@ -213,11 +238,22 @@ struct WaitableOperationImplBase : Base {
     explicit WaitableOperationImplBase(Context* context, Rec&& receiver, Args&&... args)
         : Base(di::forward<Args>(args)...), context(context), receiver(di::move(receiver)) {}
 
+    auto try_execute() -> di::Void { return {}; }
+
     void execute() override {
         auto stop_token = ex::get_stop_token(ex::get_env(this->receiver));
         if (stop_token.stop_requested()) {
             ex::set_stopped(di::move(this->receiver));
         } else {
+            auto result = static_cast<Self&>(*this).try_execute();
+            if constexpr (!di::SameAs<decltype(result), di::Void>) {
+                if (result != di::Unexpected(PosixError::ResourceUnavailableTryAgain)) {
+                    // Complete immediately.
+                    this->value = di::move(result);
+                    this->complete();
+                    return;
+                }
+            }
             this->add_waiter(stop_token);
         }
     }
@@ -357,6 +393,8 @@ struct ReadSomeSender : SenderBase<ReadSomeSender, usize> {
         Op(Context* context, i32 fd, ReadSomeArgs args, Rec&& receiver)
             : Base(context, di::move(receiver), fd, EventType::Read), args(di::move(args)) {}
 
+        auto try_execute() { return do_notify(); }
+
         auto do_notify() -> di::Result<usize> {
             auto file = SyncFile(SyncFile::Owned::No, this->fd);
             if (args.offset) {
@@ -389,6 +427,8 @@ struct WriteSomeSender : SenderBase<WriteSomeSender, usize> {
 
         Op(Context* context, i32 fd, WriteSomeArgs args, Rec&& receiver)
             : Base(context, di::move(receiver), fd, EventType::Write), args(di::move(args)) {}
+
+        auto try_execute() { return do_notify(); }
 
         auto do_notify() -> di::Result<usize> {
             auto file = SyncFile(SyncFile::Owned::No, this->fd);
@@ -686,6 +726,34 @@ struct TimeoutSender : SenderBase<TimeoutSender> {
     }
 };
 
+struct ModifiedSender : SenderBase<ModifiedSender> {
+    using Base = SenderBase<ModifiedSender>;
+
+    explicit ModifiedSender(Context* context, di::Path path) : Base(context), path(di::move(path)) {}
+
+    di::Path path;
+
+    template<typename Rec>
+    struct Op : WaitableOperationImplBase<Op<Rec>, Rec, InotifyOperationBase, di::Result<>, true> {
+        using Base = WaitableOperationImplBase<Op<Rec>, Rec, InotifyOperationBase, di::Result<>, true>;
+
+        Op(Context* context, di::Path path, Rec&& receiver)
+            : Base(context, di::move(receiver), di::move(path), Inotify::EventType::WriteClosed) {}
+
+        auto do_notify() -> di::Result<> {
+            if (this->error.success()) {
+                return {};
+            }
+            return di::Unexpected(di::move(this->error));
+        }
+    };
+
+    template<di::ReceiverOf<Base::CompletionSignatures> Rec>
+    friend auto tag_invoke(di::Tag<ex::connect>, ModifiedSender self, Rec receiver) {
+        return Op<Rec> { self.context, di::move(self.path), di::move(receiver) };
+    }
+};
+
 struct OpenSender : SenderBase<OpenSender, FileToken> {
     using Base = SenderBase<OpenSender, FileToken>;
 
@@ -706,7 +774,7 @@ struct OpenSender : SenderBase<OpenSender, FileToken> {
                                       args.open_flags | OpenFlags::NonBlocking));
 
             // The file descriptor is managed via the async resource.
-            return FileToken(context, file.leak_file_descriptor());
+            return FileToken(this->context, file.leak_file_descriptor());
         }
     };
 
@@ -731,7 +799,10 @@ struct AdoptFileSender : SenderBase<AdoptFileSender, FileToken> {
 
         Op(Context* context, SyncFile file, Rec&& receiver) : Base(context, di::move(receiver)), file(di::move(file)) {}
 
-        auto do_execute() -> FileToken { return FileToken(this->context, file.leak_file_descriptor()); }
+        auto do_execute() -> di::Result<FileToken> {
+            TRY(file.set_open_flags(OpenFlags::NonBlocking));
+            return FileToken(this->context, file.leak_file_descriptor());
+        }
     };
 
     template<di::ReceiverOf<Base::CompletionSignatures> Rec>
@@ -864,5 +935,9 @@ inline auto tag_invoke(di::Tag<wait>, Scheduler self, system::ProcessHandle proc
         return sigchild_waiter(self, di::move(process));
     }
     return PidfdWaitSender(self.context, di::move(process));
+}
+
+inline auto tag_invoke(di::Tag<modified>, Scheduler self, di::Path path) {
+    return ModifiedSender(self.context, di::move(path));
 }
 }

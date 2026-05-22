@@ -18,7 +18,7 @@ static auto sys_epoll_ctl(i32 epoll_fd, i32 op, i32 fd, epoll_event* event = nul
 static auto sys_epoll_pwait(i32 epoll_fd, di::Span<epoll_event> events, i32 timeout = -1, void* sigmask = nullptr)
     -> di::Result<di::Span<epoll_event>> {
     auto count = TRY(system::system_call<i32>(system::Number::epoll_pwait, epoll_fd, events.data(), i32(events.size()),
-                                              timeout, sigmask));
+                                              timeout, sigmask, 8));
     return *events.first(count);
 }
 
@@ -26,7 +26,7 @@ static auto sys_epoll_pwait2(i32 epoll_fd, di::Span<epoll_event> events, timespe
                              void* sigmask = nullptr) -> di::Result<di::Span<epoll_event>> {
 #ifdef DIUS_LINUX_PWAIT2
     auto count = TRY(system::system_call<i32>(system::Number::epoll_pwait2, epoll_fd, events.data(), i32(events.size()),
-                                              timeout, sigmask));
+                                              timeout, sigmask, 8));
     return *events.first(count);
 #else
     return di::Unexpected(dius::PosixError::FunctionNotSupported);

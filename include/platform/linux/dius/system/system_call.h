@@ -75,6 +75,9 @@ enum class Number : int {
 #define DIUS_PIDFD_SEND_SIGNAL
     pidfd_send_signal = __NR_pidfd_send_signal,
 #endif
+    inotify_init1 = __NR_inotify_init1,
+    inotify_add_watch = __NR_inotify_add_watch,
+    inotify_rm_watch = __NR_inotify_rm_watch,
 };
 
 using SystemCallArg = unsigned long;

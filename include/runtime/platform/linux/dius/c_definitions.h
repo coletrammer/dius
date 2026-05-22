@@ -8,6 +8,8 @@
 #include <linux/eventfd.h>
 #include <linux/eventpoll.h>
 #include <linux/fcntl.h>
+#include <linux/inotify.h>
+#include <linux/limits.h>
 #include <linux/mman.h>
 #include <linux/sched.h>
 #include <linux/signal.h>

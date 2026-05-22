@@ -4,6 +4,7 @@
 #include "di/execution/algorithm/with_env.h"
 #include "di/execution/coroutine/lazy.h"
 #include "di/test/prelude.h"
+#include "dius/filesystem/operations.h"
 #include "dius/io.h"
 #include "dius/linux/epoll_context.h"
 #include "dius/platform_process.h"
@@ -133,9 +134,40 @@ static void wait() {
     }
 }
 
+static void modified() {
+    auto path = "/tmp/dius_io_context_modified.txt"_pv;
+    ASSERT(dius::filesystem::create_regular_file(path));
+    auto _ = di::ScopeExit([&] {
+        ASSERT(dius::filesystem::remove(path));
+    });
+
+    auto context = *dius::linux::epoll::Context::create();
+    auto sched = context.get_scheduler();
+
+    auto write_task = ex::use_resources(
+        [&](auto w) {
+            auto b = byte(0);
+            return ex::schedule_after(sched, 100_ms) | ex::let_value([=] {
+                       return dius::write_exactly(w, di::Span { &b, 1 });
+                   });
+        },
+        dius::open(sched, path.to_owned(), dius::OpenMode::AppendOnly));
+
+    auto executed = false;
+    auto start = dius::SteadyClock::now();
+    auto modified_task = dius::modified(sched, path.to_owned()) | ex::then([&] {
+                             executed = true;
+                             ASSERT_GT_EQ(dius::SteadyClock::now(), start + 100_ms);
+                         });
+    auto task = ex::when_all(di::move(write_task), di::move(modified_task));
+    ASSERT(ex::sync_wait_on(context, di::move(task)));
+    ASSERT(executed);
+}
+
 TEST(io_context, read_write)
 TEST(io_context, cancel)
 TEST(io_context, signal)
 TEST(io_context, timed)
 TEST(io_context, wait)
+TEST(io_context, modified)
 }
