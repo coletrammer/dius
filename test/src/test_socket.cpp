@@ -3,6 +3,7 @@
 #include "di/execution/algorithm/use_resources.h"
 #include "di/execution/algorithm/when_all.h"
 #include "di/execution/coroutine/prelude.h"
+#include "di/execution/coroutine/task.h"
 #include "di/execution/interface/schedule.h"
 #include "di/execution/io/ipc_binary.h"
 #include "di/execution/io/ipc_protocol.h"
@@ -34,12 +35,12 @@ static void unix_socket() {
 
     auto executed = false;
     auto server = ex::use_resources(
-        [&](auto& passive_socket) -> di::Lazy<> {
+        [&](auto& passive_socket) -> di::Task<> {
             co_await dius::bind(passive_socket, address.clone());
             co_await dius::listen(passive_socket, 1);
 
             co_await ex::use_resources(
-                [&](auto& socket) -> di::Lazy<> {
+                [&](auto& socket) -> di::Task<> {
                     auto buffer = di::Vector<char> {};
                     buffer.resize(message.size());
 
@@ -49,16 +50,13 @@ static void unix_socket() {
                     ASSERT_EQ(received, message);
 
                     executed = true;
-                    co_return {};
                 },
                 dius::accept(passive_socket));
-
-            co_return {};
         },
         dius::make_unix_socket(scheduler));
 
     auto client = ex::use_resources(
-        [&](auto& socket) -> di::Lazy<> {
+        [&](auto& socket) -> di::Task<> {
             for (auto _ : di::range(3)) {
                 if (co_await (dius::connect(socket, address.clone()) | ex::into_result)) {
                     break;
@@ -66,8 +64,6 @@ static void unix_socket() {
             }
 
             co_await dius::write_exactly(socket, di::as_bytes(message.span()));
-
-            co_return {};
         },
         dius::make_unix_socket(scheduler));
 
@@ -126,12 +122,12 @@ static void ipc_binary() {
 
     auto executed = false;
     auto server = ex::use_resources(
-        [&](auto& passive_socket) -> di::Lazy<> {
+        [&](auto& passive_socket) -> di::Task<> {
             co_await dius::bind(passive_socket, address.clone());
             co_await dius::listen(passive_socket, 1);
 
             co_await ex::use_resources(
-                [&](auto& socket) -> di::Lazy<> {
+                [&](auto& socket) -> di::Task<> {
                     co_await ex::ipc_binary_connect_to_client<MyProtocol>(
                         di::ipc::ReceiverTransmitter(socket), di::ipc::Receive(di::overload(
                                                                   [&](ClientMessage2 m2) {
@@ -142,16 +138,13 @@ static void ipc_binary() {
                                                                       ASSERT_EQ(m1.s, message);
                                                                       executed = true;
                                                                   })));
-                    co_return {};
                 },
                 dius::accept(passive_socket));
-
-            co_return {};
         },
         dius::make_unix_socket(scheduler));
 
     auto client = ex::use_resources(
-        [&](auto& socket) -> di::Lazy<> {
+        [&](auto& socket) -> di::Task<> {
             for (auto _ : di::range(3)) {
                 if (co_await (dius::connect(socket, address.clone()) | ex::into_result)) {
                     break;
@@ -159,7 +152,7 @@ static void ipc_binary() {
             }
 
             co_await ex::ipc_binary_connect_to_server<MyProtocol>(
-                di::ipc::ReceiverTransmitter(socket), di::ipc::Transmit([&](auto connection) -> di::Lazy<> {
+                di::ipc::ReceiverTransmitter(socket), di::ipc::Transmit([&](auto connection) -> di::Task<> {
                     co_await di::send(connection, ClientMessage1 { message.to_owned() });
 
                     auto r = co_await di::send(connection, ClientMessage2 { 1, 2, 3 });
@@ -167,10 +160,7 @@ static void ipc_binary() {
                     ASSERT_EQ(r.y, 2);
 
                     co_await dius::shutdown(socket, dius::net::Shutdown::ReadWrite);
-                    co_return {};
                 }));
-
-            co_return {};
         },
         dius::make_unix_socket(scheduler));
 

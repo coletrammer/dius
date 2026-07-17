@@ -2,7 +2,7 @@
 #include "di/execution/algorithm/use_resources.h"
 #include "di/execution/algorithm/when_all.h"
 #include "di/execution/algorithm/with_env.h"
-#include "di/execution/coroutine/lazy.h"
+#include "di/execution/coroutine/task.h"
 #include "di/test/prelude.h"
 #include "dius/filesystem/operations.h"
 #include "dius/io.h"
@@ -128,7 +128,7 @@ static void wait() {
         }
 #endif
 
-        auto task = ex::with_debug_env(dius::wait(sched, di::move(process).value()));
+        auto task = dius::wait(sched, di::move(process).value());
         auto expected = dius::system::ProcessResult(1, false);
         ASSERT_EQ(ex::sync_wait_on(context, di::move(task)), expected);
     }

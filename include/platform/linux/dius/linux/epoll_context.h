@@ -1,7 +1,7 @@
 #pragma once
 
 #include "di/container/intrusive/atomic_batch_queue.h"
-#include "di/execution/coroutine/lazy.h"
+#include "di/execution/coroutine/task.h"
 #include "di/execution/interface/schedule.h"
 #include "di/execution/interface/timed_scheduler.h"
 #include "di/execution/macro/co_try.h"
@@ -337,7 +337,7 @@ struct ScheduleSender : SenderBase<ScheduleSender, di::Void, false> {
     explicit ScheduleSender(Context* context) : Base(context) {}
 
     template<typename Rec>
-    struct Op : OperationImplBase<Op<Rec>, Rec> {
+    struct Op final : OperationImplBase<Op<Rec>, Rec> {
         using Base = OperationImplBase<Op, Rec>;
 
         Op(Context* context, Rec&& receiver) : Base(context, di::move(receiver)) {}
@@ -530,8 +530,8 @@ struct ConnectUnixSender : SenderBase<ConnectUnixSender> {
     }
 };
 
-struct BindUnixSender : SenderBase<BindUnixSender, FileToken> {
-    using Base = SenderBase<BindUnixSender, FileToken>;
+struct BindUnixSender : SenderBase<BindUnixSender> {
+    using Base = SenderBase<BindUnixSender>;
 
     explicit BindUnixSender(Context* context, i32 fd, BindUnixArgs args)
         : Base(context), fd(fd), args(di::move(args)) {}
@@ -558,8 +558,8 @@ struct BindUnixSender : SenderBase<BindUnixSender, FileToken> {
     }
 };
 
-struct ShutdownSender : SenderBase<ShutdownSender, FileToken> {
-    using Base = SenderBase<ShutdownSender, FileToken>;
+struct ShutdownSender : SenderBase<ShutdownSender> {
+    using Base = SenderBase<ShutdownSender>;
 
     explicit ShutdownSender(Context* context, i32 fd, ShutdownArgs args)
         : Base(context), fd(fd), args(di::move(args)) {}
@@ -588,8 +588,8 @@ struct ShutdownSender : SenderBase<ShutdownSender, FileToken> {
     }
 };
 
-struct ListenSender : SenderBase<ListenSender, FileToken> {
-    using Base = SenderBase<ListenSender, FileToken>;
+struct ListenSender : SenderBase<ListenSender> {
+    using Base = SenderBase<ListenSender>;
 
     explicit ListenSender(Context* context, i32 fd, ListenArgs args) : Base(context), fd(fd), args(di::move(args)) {}
 
@@ -916,14 +916,14 @@ inline auto tag_invoke(di::Tag<ex::schedule_at>, Scheduler self, SteadyClock::Ti
     return TimeoutSender(self.context, deadline);
 }
 
-inline auto sigchild_waiter(Scheduler self, system::ProcessHandle process) -> di::Lazy<system::ProcessResult> {
+inline auto sigchild_waiter(Scheduler self, system::ProcessHandle process) -> di::Task<system::ProcessResult> {
     for (;;) {
         auto result = process.sync_wait(true);
         if (result == di::Unexpected(PosixError::ResourceUnavailableTryAgain)) {
             co_await SignalledSender(self.context, Signal::Child);
             continue;
         }
-        co_return CO_TRY(di::move(result));
+        co_return co_yield di::move(result);
     }
 }
 

@@ -36,6 +36,7 @@ enum class Number : int {
     lseek = __NR_lseek,
     mknodat = __NR_mknodat,
     mkdirat = __NR_mkdirat,
+    fchmodat = __NR_fchmodat,
     bind = __NR_bind,
     listen = __NR_listen,
     accept4 = __NR_accept4,

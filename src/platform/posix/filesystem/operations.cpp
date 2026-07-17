@@ -106,4 +106,8 @@ auto RemoveAllFunction::operator()(di::PathView path) -> di::Result<umax> {
     result += TRY(remove(path));
     return result;
 }
+
+auto PermissionsFunction::operator()(di::PathView path, Perms perms) -> di::Result<> {
+    return syscalls::sys_chmod(path, di::to_underlying(perms));
+}
 }

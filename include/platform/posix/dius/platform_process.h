@@ -21,7 +21,7 @@ enum class Signal {
     User2 = SIGUSR2,
     Pipe = SIGPIPE,
     Alarm = SIGALRM,
-    Terminal = SIGTERM,
+    Terminate = SIGTERM,
     Child = SIGCHLD,
     Continue = SIGCONT,
     Stop = SIGSTOP,

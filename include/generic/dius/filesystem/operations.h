@@ -1,6 +1,7 @@
 #pragma once
 
 #include "di/container/path/prelude.h"
+#include "dius/filesystem/perms.h"
 
 namespace dius::filesystem {
 namespace detail {
@@ -24,6 +25,10 @@ namespace detail {
     struct RemoveAllFunction {
         static auto operator()(di::PathView path) -> di::Result<umax>;
     };
+
+    struct PermissionsFunction {
+        static auto operator()(di::PathView path, Perms perms) -> di::Result<>;
+    };
 }
 
 constexpr inline auto create_regular_file = detail::CreateRegularFileFunction {};
@@ -31,4 +36,5 @@ constexpr inline auto create_directory = detail::CreateDirectoryFunction {};
 constexpr inline auto create_directories = detail::CreateDirectoriesFunction {};
 constexpr inline auto remove = detail::RemoveFunction {};
 constexpr inline auto remove_all = detail::RemoveAllFunction {};
+constexpr inline auto permissions = detail::PermissionsFunction {};
 }

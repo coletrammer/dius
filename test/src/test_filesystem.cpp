@@ -3,6 +3,7 @@
 #include "dius/filesystem/operations.h"
 #include "dius/filesystem/prelude.h"
 #include "dius/filesystem/query/is_block_file.h"
+#include "dius/filesystem/query/is_socket.h"
 #include "dius/filesystem/recursive_directory_iterator.h"
 #include "dius/print.h"
 #include "dius/sync_file.h"
